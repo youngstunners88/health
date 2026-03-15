@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Compliance Dashboard</title>
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --primary-dark: #0b5ed7;
+            --success: #198754;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #0dcaf0;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --bg: #f0f2f5;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; }
+        .header { background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+        .header h1 { font-size: 1.75rem; font-weight: 600; }
+        .header p { opacity: 0.85; font-size: 0.95rem; margin-top: 0.25rem; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: white; border-radius: 12px; padding: 1.25rem; box-shadow: var(--card-shadow); border-left: 4px solid var(--primary); }
+        .stat-card.green { border-left-color: var(--success); }
+        .stat-card.orange { border-left-color: var(--warning); }
+        .stat-card.red { border-left-color: var(--danger); }
+        .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: var(--dark); }
+        .stat-card .stat-label { font-size: 0.85rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; }
+        .score-container { background: white; border-radius: 12px; padding: 2rem; box-shadow: var(--card-shadow); margin-bottom: 1.5rem; text-align: center; }
+        .score-circle { width: 180px; height: 180px; border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; position: relative; }
+        .score-circle svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+        .score-circle .score-text { font-size: 2.5rem; font-weight: 700; }
+        .score-circle .score-label { font-size: 0.9rem; color: var(--gray); }
+        .progress-bar-container { background: var(--light); border-radius: 10px; height: 24px; overflow: hidden; margin: 1rem 0; }
+        .progress-bar { height: 100%; border-radius: 10px; transition: width 0.8s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 0.85rem; }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: white; padding: 0.5rem; border-radius: 12px; box-shadow: var(--card-shadow); flex-wrap: wrap; }
+        .tab { padding: 0.75rem 1.25rem; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--gray); transition: all 0.2s; white-space: nowrap; }
+        .tab:hover { background: var(--light); color: var(--dark); }
+        .tab.active { background: var(--primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: var(--card-shadow); margin-bottom: 1.5rem; }
+        .card h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+        .checklist-item { display: flex; align-items: flex-start; padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 0.75rem; }
+        .checklist-item:last-child { border-bottom: none; }
+        .check-status { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: white; font-weight: 700; margin-top: 2px; }
+        .check-status.pass { background: var(--success); }
+        .check-status.fail { background: var(--danger); }
+        .check-details { flex: 1; }
+        .check-details .check-title { font-weight: 600; font-size: 0.95rem; }
+        .check-details .check-id { font-size: 0.75rem; color: var(--gray); font-family: monospace; }
+        .check-details .check-desc { font-size: 0.85rem; color: var(--gray); margin-top: 0.25rem; }
+        .check-details .check-remediation { font-size: 0.85rem; color: var(--danger); margin-top: 0.5rem; padding: 0.5rem; background: #fff5f5; border-radius: 6px; border-left: 3px solid var(--danger); }
+        .category-header { font-weight: 600; font-size: 1rem; padding: 0.75rem 0; color: var(--primary); border-bottom: 2px solid var(--primary); margin-top: 1rem; }
+        .category-score { float: right; font-size: 0.85rem; font-weight: 500; }
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #157347; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #bb2d3b; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
+        .btn-outline:hover { background: var(--light); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        th { background: var(--light); font-weight: 600; color: var(--gray); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
+        tr:hover { background: #f8f9ff; }
+        .badge { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+        .badge-pass { background: #d1e7dd; color: #0f5132; }
+        .badge-fail { background: #f8d7da; color: #842029; }
+        .badge-high { background: #f8d7da; color: #842029; }
+        .badge-medium { background: #fff3cd; color: #664d03; }
+        .empty-state { text-align: center; padding: 3rem; color: var(--gray); }
+        .loading { text-align: center; padding: 2rem; color: var(--gray); }
+        .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; z-index: 2000; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .filter-bar { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .filter-bar select, .filter-bar input { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
+        .filter-bar select:focus, .filter-bar input:focus { outline: none; border-color: var(--primary); }
+        .guidance-section { margin-bottom: 1.5rem; }
+        .guidance-section h4 { font-size: 1rem; margin-bottom: 0.5rem; color: var(--dark); }
+        .guidance-section p { font-size: 0.9rem; color: var(--gray); margin-bottom: 0.5rem; }
+        .guidance-section ul { margin-left: 1.25rem; font-size: 0.9rem; color: var(--gray); }
+        .guidance-section li { margin-bottom: 0.25rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Healthcare Compliance Dashboard</h1>
+        <p>HIPAA, SOC 2, and FDA regulatory compliance monitoring</p>
+    </div>
+    <div class="container">
+        <div class="stats-row">
+            <div class="stat-card green"><div class="stat-value" id="passedCount">-</div><div class="stat-label">Passed Checks</div></div>
+            <div class="stat-card red"><div class="stat-value" id="failedCount">-</div><div class="stat-label">Failed Checks</div></div>
+            <div class="stat-card orange"><div class="stat-value" id="gapCount">-</div><div class="stat-label">Open Gaps</div></div>
+            <div class="stat-card"><div class="stat-value" id="accessLogCount">-</div><div class="stat-label">Access Events</div></div>
+        </div>
+
+        <div class="score-container">
+            <h2 style="margin-bottom:0.5rem;">Overall Compliance Score</h2>
+            <div class="score-circle" id="scoreCircle">
+                <svg width="180" height="180"><circle cx="90" cy="90" r="80" fill="none" stroke="#e9ecef" stroke-width="12"/><circle id="scoreArc" cx="90" cy="90" r="80" fill="none" stroke="var(--success)" stroke-width="12" stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="502.65"/></svg>
+                <div><div class="score-text" id="scoreValue">-</div><div class="score-label">percent</div></div>
+            </div>
+            <div class="progress-bar-container"><div class="progress-bar" id="scoreBar" style="width:0%;background:var(--gray);">0%</div></div>
+            <button class="btn btn-primary" onclick="runAudit()" style="margin-top:1rem;">Run Compliance Audit</button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('checklist')">HIPAA Checklist</button>
+            <button class="tab" onclick="switchTab('gaps')">Gap Report</button>
+            <button class="tab" onclick="switchTab('accesslog')">Access Log</button>
+            <button class="tab" onclick="switchTab('baa')">BAA Template</button>
+            <button class="tab" onclick="switchTab('soc2')">SOC 2</button>
+            <button class="tab" onclick="switchTab('fda')">FDA Guidance</button>
+        </div>
+
+        <div id="checklist" class="tab-content active">
+            <div class="card">
+                <h3>HIPAA Compliance Checklist</h3>
+                <div class="filter-bar">
+                    <select id="categoryFilter" onchange="filterChecklist()">
+                        <option value="">All Categories</option>
+                        <option value="Administrative Safeguards">Administrative Safeguards</option>
+                        <option value="Physical Safeguards">Physical Safeguards</option>
+                        <option value="Technical Safeguards">Technical Safeguards</option>
+                        <option value="Breach Notification">Breach Notification</option>
+                        <option value="Privacy Rule">Privacy Rule</option>
+                    </select>
+                    <select id="statusFilter" onchange="filterChecklist()">
+                        <option value="">All Status</option>
+                        <option value="pass">Passed</option>
+                        <option value="fail">Failed</option>
+                    </select>
+                </div>
+                <div id="checklistContent"><div class="loading"><div class="spinner"></div><p>Run an audit to see results</p></div></div>
+            </div>
+        </div>
+
+        <div id="gaps" class="tab-content">
+            <div class="card">
+                <h3>Gap Report</h3>
+                <div id="gapsContent"><div class="loading"><div class="spinner"></div><p>Run an audit to see gaps</p></div></div>
+            </div>
+        </div>
+
+        <div id="accesslog" class="tab-content">
+            <div class="card">
+                <h3>Access Log</h3>
+                <div class="filter-bar">
+                    <input type="text" id="logPatientId" placeholder="Patient ID">
+                    <input type="text" id="logUser" placeholder="User">
+                    <button class="btn btn-outline" onclick="loadAccessLog()">Filter</button>
+                </div>
+                <div id="accessLogContent"><div class="loading"><div class="spinner"></div><p>Loading access log...</p></div></div>
+            </div>
+        </div>
+
+        <div id="baa" class="tab-content">
+            <div class="card">
+                <h3>Business Associate Agreement Template</h3>
+                <p style="margin-bottom:1rem;color:var(--gray);">Download a comprehensive BAA template compliant with HIPAA and HITECH requirements.</p>
+                <button class="btn btn-primary" onclick="downloadBAA()">Download BAA Template</button>
+                <div id="baaPreview" style="margin-top:1.5rem;white-space:pre-wrap;font-family:monospace;font-size:0.85rem;background:var(--light);padding:1.5rem;border-radius:8px;max-height:600px;overflow-y:auto;display:none;"></div>
+            </div>
+        </div>
+
+        <div id="soc2" class="tab-content">
+            <div class="card">
+                <h3>SOC 2 Type II Readiness Checklist</h3>
+                <div id="soc2Content"><div class="loading"><div class="spinner"></div><p>Loading SOC 2 checklist...</p></div></div>
+            </div>
+        </div>
+
+        <div id="fda" class="tab-content">
+            <div class="card">
+                <h3>FDA Software as Medical Device (SaMD) Classification</h3>
+                <div id="fdaContent"><div class="loading"><div class="spinner"></div><p>Loading FDA guidance...</p></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        let auditResults = [];
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab).classList.add('active');
+            if (tab === 'accesslog') loadAccessLog();
+            if (tab === 'soc2') loadSOC2();
+            if (tab === 'fda') loadFDA();
+        }
+
+        async function runAudit() {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Running...';
+            try {
+                const res = await fetch('/api/audit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ overrides: {} }) });
+                const data = await res.json();
+                auditResults = data.results || [];
+                updateScore(data);
+                renderChecklist(auditResults);
+                loadGaps();
+                showToast('Audit completed successfully', 'success');
+            } catch (e) {
+                showToast('Audit failed: ' + e.message, 'error');
+            }
+            btn.disabled = false;
+            btn.textContent = 'Run Compliance Audit';
+        }
+
+        function updateScore(data) {
+            const score = data.score || 0;
+            document.getElementById('scoreValue').textContent = score + '%';
+            document.getElementById('scoreBar').style.width = score + '%';
+            document.getElementById('scoreBar').textContent = score + '%';
+            const color = score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--warning)' : 'var(--danger)';
+            document.getElementById('scoreBar').style.background = color;
+            const circumference = 2 * Math.PI * 80;
+            const offset = circumference - (score / 100) * circumference;
+            document.getElementById('scoreArc').style.strokeDashoffset = offset;
+            document.getElementById('scoreArc').style.stroke = color;
+            document.getElementById('passedCount').textContent = data.passed || 0;
+            document.getElementById('failedCount').textContent = data.failed || 0;
+        }
+
+        function renderChecklist(results) {
+            if (!results.length) return;
+            const container = document.getElementById('checklistContent');
+            const categories = {};
+            results.forEach(r => {
+                if (!categories[r.category]) categories[r.category] = [];
+                categories[r.category].push(r);
+            });
+            let html = '';
+            for (const [cat, items] of Object.entries(categories)) {
+                const passed = items.filter(i => i.status === 'pass').length;
+                const score = Math.round((passed / items.length) * 100);
+                html += '<div class="category-header" data-category="' + cat + '">' + cat + '<span class="category-score">' + passed + '/' + items.length + ' (' + score + '%)</span></div>';
+                items.forEach(item => {
+                    html += '<div class="checklist-item" data-status="' + item.status + '" data-category="' + item.category + '">';
+                    html += '<div class="check-status ' + item.status + '">' + (item.status === 'pass' ? '✓' : '✗') + '</div>';
+                    html += '<div class="check-details">';
+                    html += '<div class="check-title">' + item.title + '</div>';
+                    html += '<div class="check-id">' + item.id + '</div>';
+                    html += '<div class="check-desc">' + item.description + '</div>';
+                    if (item.status === 'fail') {
+                        html += '<div class="check-remediation"><strong>Remediation:</strong> ' + item.remediation + '</div>';
+                    }
+                    html += '</div></div>';
+                });
+            }
+            container.innerHTML = html;
+        }
+
+        function filterChecklist() {
+            const cat = document.getElementById('categoryFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            document.querySelectorAll('.checklist-item').forEach(item => {
+                const itemCat = item.dataset.category;
+                const itemStatus = item.dataset.status;
+                const showCat = !cat || itemCat === cat;
+                const showStatus = !status || itemStatus === status;
+                item.style.display = (showCat && showStatus) ? 'flex' : 'none';
+            });
+            document.querySelectorAll('.category-header').forEach(header => {
+                const headerCat = header.dataset.category;
+                const showCat = !cat || headerCat === cat;
+                header.style.display = showCat ? 'block' : 'none';
+            });
+        }
+
+        async function loadGaps() {
+            try {
+                const res = await fetch('/api/gaps');
+                const data = await res.json();
+                document.getElementById('gapCount').textContent = data.total_gaps || 0;
+                const container = document.getElementById('gapsContent');
+                if (!data.gaps || data.gaps.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No compliance gaps found</p></div>';
+                    return;
+                }
+                container.innerHTML = data.gaps.map(g => {
+                    return '<div class="checklist-item"><div class="check-status fail">✗</div><div class="check-details"><div class="check-title">' + g.title + ' <span class="badge badge-' + g.priority + '">' + g.priority + ' priority</span></div><div class="check-id">' + g.id + ' - ' + g.category + '</div><div class="check-desc">' + g.description + '</div><div class="check-remediation"><strong>Remediation:</strong> ' + g.remediation + '</div></div></div>';
+                }).join('');
+            } catch (e) { console.error('Failed to load gaps', e); }
+        }
+
+        async function loadAccessLog() {
+            const patientId = document.getElementById('logPatientId').value;
+            const user = document.getElementById('logUser').value;
+            const container = document.getElementById('accessLogContent');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            try {
+                const params = new URLSearchParams();
+                if (patientId) params.set('patient_id', patientId);
+                if (user) params.set('user', user);
+                const res = await fetch('/api/access-log?' + params.toString());
+                const data = await res.json();
+                document.getElementById('accessLogCount').textContent = data.total || 0;
+                if (!data.entries || data.entries.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><p>No access events recorded</p></div>';
+                    return;
+                }
+                let tableHtml = '<table><thead><tr><th>Event ID</th><th>User</th><th>Patient ID</th><th>Action</th><th>Resource</th><th>IP Address</th><th>Timestamp</th></tr></thead><tbody>';
+                data.entries.forEach(e => {
+                    tableHtml += '<tr><td><code>' + e.event_id + '</code></td><td>' + e.user + '</td><td>' + e.patient_id + '</td><td>' + e.action + '</td><td>' + e.resource + '</td><td><code>' + e.ip_address + '</code></td><td>' + e.timestamp + '</td></tr>';
+                });
+                tableHtml += '</tbody></table>';
+                container.innerHTML = tableHtml;
+            } catch (e) { container.innerHTML = '<div class="empty-state"><p>Failed to load access log</p></div>'; }
+        }
+
+        async function downloadBAA() {
+            try {
+                const res = await fetch('/api/baa-template');
+                const text = await res.text();
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Business_Associate_Agreement_Template.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('BAA template downloaded', 'success');
+                const preview = document.getElementById('baaPreview');
+                preview.style.display = 'block';
+                preview.textContent = text;
+            } catch (e) { showToast('Failed to download BAA template', 'error'); }
+        }
+
+        async function loadSOC2() {
+            const container = document.getElementById('soc2Content');
+            try {
+                const res = await fetch('/api/soc2-checklist');
+                const data = await res.json();
+                const categories = {};
+                data.checklist.forEach(c => {
+                    if (!categories[c.category]) categories[c.category] = [];
+                    categories[c.category].push(c);
+                });
+                let html = '<p style="color:var(--gray);margin-bottom:1rem;">Total Controls: ' + data.total_controls + '</p>';
+                for (const [cat, controls] of Object.entries(categories)) {
+                    html += '<div class="category-header">' + cat + '</div>';
+                    controls.forEach(c => {
+                        html += '<div class="checklist-item"><div class="check-details"><div class="check-title">' + c.title + '</div><div class="check-id">' + c.id + '</div><div class="check-desc">' + c.description + '</div></div></div>';
+                    });
+                }
+                html += '<div style="margin-top:1.5rem;padding:1rem;background:var(--light);border-radius:8px;"><h4 style="margin-bottom:0.5rem;">Readiness Notes</h4><ul style="margin-left:1.25rem;color:var(--gray);font-size:0.9rem;">';
+                data.readiness_notes.forEach(n => { html += '<li>' + n + '</li>'; });
+                html += '</ul></div>';
+                container.innerHTML = html;
+            } catch (e) { container.innerHTML = '<div class="empty-state"><p>Failed to load SOC 2 checklist</p></div>'; }
+        }
+
+        async function loadFDA() {
+            const container = document.getElementById('fdaContent');
+            try {
+                const res = await fetch('/api/fda-guidance');
+                const data = await res.json();
+                let html = '<p style="color:var(--gray);margin-bottom:1rem;">' + data.overview + '</p>';
+                html += '<p style="margin-bottom:1rem;"><strong>Framework:</strong> ' + data.framework + '</p>';
+                data.categories.forEach(cat => {
+                    html += '<div class="card" style="margin-bottom:1rem;"><h4>' + cat.class + '</h4>';
+                    html += '<p style="color:var(--gray);margin-bottom:0.5rem;">' + cat.description + '</p>';
+                    html += '<p><strong>Examples:</strong></p><ul>';
+                    cat.examples.forEach(e => { html += '<li>' + e + '</li>'; });
+                    html += '</ul><p><strong>Requirements:</strong></p><ul>';
+                    cat.requirements.forEach(r => { html += '<li>' + r + '</li>'; });
+                    html += '</ul></div>';
+                });
+                html += '<div class="card"><h4>Key Considerations</h4><ul>';
+                data.key_considerations.forEach(c => { html += '<li>' + c + '</li>'; });
+                html += '</ul></div>';
+                html += '<div class="card"><h4>Predetermined Change Control</h4><p style="color:var(--gray);">' + data.predetermined_change_control + '</p></div>';
+                html += '<div class="card"><h4>Related Guidance Documents</h4><ul>';
+                data.guidance_documents.forEach(g => { html += '<li>' + g + '</li>'; });
+                html += '</ul></div>';
+                container.innerHTML = html;
+            } catch (e) { container.innerHTML = '<div class="empty-state"><p>Failed to load FDA guidance</p></div>'; }
+        }
+
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        async function loadScore() {
+            try {
+                const res = await fetch('/api/score');
+                const data = await res.json();
+                const score = data.overall_score || 0;
+                document.getElementById('scoreValue').textContent = score + '%';
+                document.getElementById('scoreBar').style.width = score + '%';
+                document.getElementById('scoreBar').textContent = score + '%';
+                const color = score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--warning)' : 'var(--danger)';
+                document.getElementById('scoreBar').style.background = color;
+                const circumference = 2 * Math.PI * 80;
+                const offset = circumference - (score / 100) * circumference;
+                document.getElementById('scoreArc').style.strokeDashoffset = offset;
+                document.getElementById('scoreArc').style.stroke = color;
+                document.getElementById('passedCount').textContent = data.passed || 0;
+                document.getElementById('failedCount').textContent = data.failed || 0;
+            } catch (e) { console.error('Failed to load score', e); }
+        }
+
+        loadScore();
+        loadAccessLog();
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+[
+  {
+    "constant": false,
+    "inputs": [{"name": "_amount", "type": "uint256"}],
+    "name": "deposit",
+    "outputs": [],
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [{"name": "_amount", "type": "uint256"}],
+    "name": "withdraw",
+    "outputs": [],
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [{"name": "_account", "type": "address"}],
+    "name": "getPendingReward",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "type": "function"
+  }
+]

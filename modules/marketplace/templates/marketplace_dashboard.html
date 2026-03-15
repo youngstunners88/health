@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Marketplace</title>
+    <style>
+        :root {
+            --primary: #0d6efd;
+            --primary-dark: #0b5ed7;
+            --success: #198754;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #0dcaf0;
+            --dark: #212529;
+            --light: #f8f9fa;
+            --gray: #6c757d;
+            --border: #dee2e6;
+            --bg: #f0f2f5;
+            --card-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--dark); line-height: 1.6; }
+        .header { background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%); color: white; padding: 1.5rem 2rem; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+        .header h1 { font-size: 1.75rem; font-weight: 600; }
+        .header p { opacity: 0.85; font-size: 0.95rem; margin-top: 0.25rem; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: white; border-radius: 12px; padding: 1.25rem; box-shadow: var(--card-shadow); border-left: 4px solid var(--primary); }
+        .stat-card.green { border-left-color: var(--success); }
+        .stat-card.orange { border-left-color: var(--warning); }
+        .stat-card.blue { border-left-color: var(--info); }
+        .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: var(--dark); }
+        .stat-card .stat-label { font-size: 0.85rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; background: white; padding: 0.5rem; border-radius: 12px; box-shadow: var(--card-shadow); }
+        .tab { padding: 0.75rem 1.5rem; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 0.95rem; font-weight: 500; color: var(--gray); transition: all 0.2s; }
+        .tab:hover { background: var(--light); color: var(--dark); }
+        .tab.active { background: var(--primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .search-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .search-bar input, .search-bar select { padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+        .search-bar input { flex: 1; min-width: 250px; }
+        .search-bar select { min-width: 180px; }
+        .search-bar input:focus, .search-bar select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,0.15); }
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem; }
+        .skill-card { background: white; border-radius: 12px; padding: 1.25rem; box-shadow: var(--card-shadow); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .skill-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .skill-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+        .skill-card h3 { font-size: 1.1rem; font-weight: 600; color: var(--dark); }
+        .skill-card .version { background: var(--light); padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.75rem; color: var(--gray); font-weight: 500; }
+        .skill-card .desc { color: var(--gray); font-size: 0.9rem; margin-bottom: 0.75rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .skill-card .meta { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+        .skill-card .category-badge { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; text-transform: capitalize; }
+        .category-clinical { background: #e3f2fd; color: #1565c0; }
+        .category-administrative { background: #fff3e0; color: #e65100; }
+        .category-patient-facing { background: #e8f5e9; color: #2e7d32; }
+        .category-analytics { background: #f3e5f5; color: #7b1fa2; }
+        .category-integration { background: #e0f7fa; color: #00838f; }
+        .category-monitoring { background: #fce4ec; color: #c62828; }
+        .category-compliance { background: #efebe9; color: #4e342e; }
+        .skill-card .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
+        .skill-card .tag { background: var(--light); padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.7rem; color: var(--gray); }
+        .skill-card .actions { margin-top: 0.75rem; display: flex; gap: 0.5rem; }
+        .btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-success:hover { background: #157347; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #bb2d3b; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--dark); }
+        .btn-outline:hover { background: var(--light); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .installed-badge { background: var(--success); color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 16px; max-width: 600px; width: 90%; max-height: 85vh; overflow-y: auto; padding: 2rem; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+        .modal h2 { margin-bottom: 1rem; font-size: 1.5rem; }
+        .modal .close-btn { float: right; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray); }
+        .modal .detail-row { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+        .modal .detail-label { font-weight: 500; color: var(--gray); }
+        .modal .detail-value { color: var(--dark); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.35rem; font-weight: 500; font-size: 0.9rem; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(13,110,253,0.15); }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; border-radius: 8px; color: white; font-weight: 500; z-index: 2000; transform: translateY(100px); opacity: 0; transition: all 0.3s; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        .empty-state { text-align: center; padding: 3rem; color: var(--gray); }
+        .empty-state svg { width: 64px; height: 64px; margin-bottom: 1rem; opacity: 0.5; }
+        .loading { text-align: center; padding: 2rem; color: var(--gray); }
+        .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Healthcare Marketplace</h1>
+        <p>Discover, install, and publish healthcare skills and integrations</p>
+    </div>
+    <div class="container">
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card"><div class="stat-value" id="totalSkills">-</div><div class="stat-label">Total Skills</div></div>
+            <div class="stat-card green"><div class="stat-value" id="installedSkills">-</div><div class="stat-label">Installed</div></div>
+            <div class="stat-card orange"><div class="stat-value" id="totalCategories">-</div><div class="stat-label">Categories</div></div>
+            <div class="stat-card blue"><div class="stat-value" id="totalTags">-</div><div class="stat-label">Tags</div></div>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('catalog')">Skill Catalog</button>
+            <button class="tab" onclick="switchTab('installed')">Installed Skills</button>
+            <button class="tab" onclick="switchTab('publish')">Publish Skill</button>
+        </div>
+        <div id="catalog" class="tab-content active">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search skills by name, description, or tags..." oninput="debounceSearch()">
+                <select id="categoryFilter" onchange="loadSkills()">
+                    <option value="">All Categories</option>
+                    <option value="clinical">Clinical</option>
+                    <option value="administrative">Administrative</option>
+                    <option value="patient-facing">Patient-Facing</option>
+                    <option value="analytics">Analytics</option>
+                    <option value="integration">Integration</option>
+                    <option value="monitoring">Monitoring</option>
+                    <option value="compliance">Compliance</option>
+                </select>
+            </div>
+            <div id="skillsGrid" class="skills-grid"></div>
+        </div>
+        <div id="installed" class="tab-content">
+            <div id="installedList"></div>
+        </div>
+        <div id="publish" class="tab-content">
+            <div style="max-width:600px;background:white;border-radius:12px;padding:2rem;box-shadow:var(--card-shadow);">
+                <h2 style="margin-bottom:1.5rem;">Publish New Skill</h2>
+                <form id="publishForm" onsubmit="publishSkill(event)">
+                    <div class="form-group"><label>Skill Name *</label><input type="text" id="pubName" required></div>
+                    <div class="form-group"><label>Description *</label><textarea id="pubDesc" required></textarea></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                        <div class="form-group"><label>Version *</label><input type="text" id="pubVersion" placeholder="1.0.0" required></div>
+                        <div class="form-group"><label>Author *</label><input type="text" id="pubAuthor" required></div>
+                    </div>
+                    <div class="form-group"><label>Category *</label>
+                        <select id="pubCategory" required>
+                            <option value="">Select category</option>
+                            <option value="clinical">Clinical</option>
+                            <option value="administrative">Administrative</option>
+                            <option value="patient-facing">Patient-Facing</option>
+                            <option value="analytics">Analytics</option>
+                            <option value="integration">Integration</option>
+                            <option value="monitoring">Monitoring</option>
+                            <option value="compliance">Compliance</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Tags (comma-separated) *</label><input type="text" id="pubTags" placeholder="hipaa, audit, compliance" required></div>
+                    <div class="form-group"><label>Install Command *</label><input type="text" id="pubInstall" placeholder="pip install my-skill" required></div>
+                    <div class="form-group"><label>Dependencies (comma-separated)</label><input type="text" id="pubDeps" placeholder="requests>=2.28.0, pydantic>=1.10.0"></div>
+                    <button type="submit" class="btn btn-primary" style="width:100%;padding:0.75rem;">Publish Skill</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="skillModal">
+        <div class="modal">
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+            <h2 id="modalTitle"></h2>
+            <div id="modalContent"></div>
+            <div style="margin-top:1.5rem;display:flex;gap:0.75rem;" id="modalActions"></div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+        let searchTimeout;
+        function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadSkills, 300); }
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab).classList.add('active');
+            if (tab === 'installed') loadInstalled();
+        }
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const stats = await res.json();
+                document.getElementById('totalSkills').textContent = stats.total_skills;
+                document.getElementById('installedSkills').textContent = stats.installed_skills;
+                document.getElementById('totalCategories').textContent = Object.keys(stats.categories).length;
+                document.getElementById('totalTags').textContent = stats.top_tags.length;
+            } catch(e) { console.error('Failed to load stats', e); }
+        }
+        async function loadSkills() {
+            const q = document.getElementById('searchInput').value;
+            const cat = document.getElementById('categoryFilter').value;
+            const grid = document.getElementById('skillsGrid');
+            grid.innerHTML = '<div class="loading"><div class="spinner"></div><p>Loading skills...</p></div>';
+            try {
+                const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(cat)}`);
+                const data = await res.json();
+                if (data.skills.length === 0) {
+                    grid.innerHTML = '<div class="empty-state"><p>No skills found</p></div>';
+                    return;
+                }
+                grid.innerHTML = data.skills.map(s => `
+                    <div class="skill-card" onclick="showSkillDetail('${s.id}')">
+                        <div class="skill-card-header">
+                            <h3>${s.name}</h3>
+                            <span class="version">v${s.version}</span>
+                        </div>
+                        <p class="desc">${s.description}</p>
+                        <div class="meta">
+                            <span class="category-badge category-${s.category}">${s.category}</span>
+                            <span style="font-size:0.8rem;color:var(--gray);">by ${s.author}</span>
+                        </div>
+                        <div class="tags">${s.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                        <div class="actions">
+                            <button class="btn btn-outline" onclick="event.stopPropagation();showSkillDetail('${s.id}')">Details</button>
+                            ${s.is_installed ? '<span class="installed-badge">Installed</span>' : `<button class="btn btn-primary" onclick="event.stopPropagation();installSkill('${s.id}')">Install</button>`}
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { grid.innerHTML = '<div class="empty-state"><p>Failed to load skills</p></div>'; }
+        }
+        async function loadInstalled() {
+            const list = document.getElementById('installedList');
+            list.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            try {
+                const res = await fetch('/api/skills');
+                const data = await res.json();
+                const installed = data.skills.filter(s => s.is_installed);
+                if (installed.length === 0) {
+                    list.innerHTML = '<div class="empty-state"><p>No skills installed yet</p></div>';
+                    return;
+                }
+                list.innerHTML = `<div class="skills-grid">${installed.map(s => `
+                    <div class="skill-card">
+                        <div class="skill-card-header">
+                            <h3>${s.name}</h3>
+                            <span class="installed-badge">Installed</span>
+                        </div>
+                        <p class="desc">${s.description}</p>
+                        <div class="meta"><span class="version">v${s.version}</span><span style="font-size:0.8rem;color:var(--gray);">Installed: ${s.installed_at || 'N/A'}</span></div>
+                        <div class="actions"><button class="btn btn-danger" onclick="uninstallSkill('${s.id}')">Uninstall</button></div>
+                    </div>
+                `).join('')}</div>`;
+            } catch(e) { list.innerHTML = '<div class="empty-state"><p>Failed to load installed skills</p></div>'; }
+        }
+        async function showSkillDetail(id) {
+            try {
+                const res = await fetch(`/api/skills/${id}`);
+                const s = await res.json();
+                document.getElementById('modalTitle').textContent = s.name;
+                document.getElementById('modalContent').innerHTML = `
+                    <p style="margin-bottom:1rem;color:var(--gray);">${s.description}</p>
+                    <div class="detail-row"><span class="detail-label">Version</span><span class="detail-value">${s.version}</span></div>
+                    <div class="detail-row"><span class="detail-label">Author</span><span class="detail-value">${s.author}</span></div>
+                    <div class="detail-row"><span class="detail-label">Category</span><span class="detail-value"><span class="category-badge category-${s.category}">${s.category}</span></span></div>
+                    <div class="detail-row"><span class="detail-label">Install Command</span><span class="detail-value"><code>${s.install_command}</code></span></div>
+                    <div class="detail-row"><span class="detail-label">Dependencies</span><span class="detail-value">${s.dependencies.join(', ')}</span></div>
+                    <div class="detail-row"><span class="detail-label">Published</span><span class="detail-value">${s.published_at || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Tags</span><span class="detail-value">${s.tags.map(t => `<span class="tag">${t}</span>`).join(' ')}</span></div>
+                `;
+                document.getElementById('modalActions').innerHTML = s.is_installed
+                    ? `<button class="btn btn-danger" onclick="uninstallSkill('${s.id}');closeModal();">Uninstall</button>`
+                    : `<button class="btn btn-success" onclick="installSkill('${s.id}');closeModal();">Install</button>`;
+                document.getElementById('skillModal').classList.add('active');
+            } catch(e) { showToast('Failed to load skill details', 'error'); }
+        }
+        function closeModal() { document.getElementById('skillModal').classList.remove('active'); }
+        async function installSkill(id) {
+            try {
+                const res = await fetch(`/api/skills/${id}/install`, { method: 'POST' });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail); }
+                showToast('Skill installed successfully', 'success');
+                loadSkills(); loadStats();
+            } catch(e) { showToast(e.message, 'error'); }
+        }
+        async function uninstallSkill(id) {
+            try {
+                const res = await fetch(`/api/skills/${id}/install`, { method: 'DELETE' });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail); }
+                showToast('Skill uninstalled', 'success');
+                loadSkills(); loadStats(); loadInstalled();
+            } catch(e) { showToast(e.message, 'error'); }
+        }
+        async function publishSkill(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('pubName').value,
+                description: document.getElementById('pubDesc').value,
+                version: document.getElementById('pubVersion').value,
+                author: document.getElementById('pubAuthor').value,
+                category: document.getElementById('pubCategory').value,
+                tags: document.getElementById('pubTags').value.split(',').map(t => t.trim()).filter(Boolean),
+                install_command: document.getElementById('pubInstall').value,
+                dependencies: document.getElementById('pubDeps').value.split(',').map(t => t.trim()).filter(Boolean)
+            };
+            try {
+                const res = await fetch('/api/skills', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (!res.ok) { const e = await res.json(); throw new Error(e.detail); }
+                showToast('Skill published successfully', 'success');
+                document.getElementById('publishForm').reset();
+                loadSkills(); loadStats();
+            } catch(e) { showToast(e.message, 'error'); }
+        }
+        function showToast(msg, type) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+        document.getElementById('skillModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+        loadStats(); loadSkills();
+    </script>
+</body>
+</html>

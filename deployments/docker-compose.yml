@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  mcp-ehr-server:
+    build:
+      context: ../../..
+      dockerfile: workspaces/healthcare/deployments/Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      - FHIR_SERVER_URL=${FHIR_SERVER_URL:-https://hapi.fhir.org/baseR4}
+      - PHI_ENCRYPTION_KEY=${PHI_ENCRYPTION_KEY}
+    volumes:
+      - ehr-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  patient-portal:
+    build:
+      context: ../../..
+      dockerfile: workspaces/healthcare/deployments/Dockerfile.portal
+    ports:
+      - "8080:8080"
+    environment:
+      - PHI_ENCRYPTION_KEY=${PHI_ENCRYPTION_KEY}
+    volumes:
+      - patient-data:/app/workspaces/healthcare/patient-portal/api/data
+    depends_on:
+      - mcp-ehr-server
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  care-dashboard:
+    build:
+      context: ../../..
+      dockerfile: workspaces/healthcare/deployments/Dockerfile.portal
+    ports:
+      - "8081:8081"
+    environment:
+      - PHI_ENCRYPTION_KEY=${PHI_ENCRYPTION_KEY}
+    volumes:
+      - patient-data:/app/workspaces/healthcare/patient-portal/api/data
+      - alert-data:/app/workspaces/healthcare/care-dashboard/api/data
+    depends_on:
+      - patient-portal
+    restart: unless-stopped
+    command: ["python", "-m", "uvicorn", "workspaces.healthcare.care-dashboard.api.app:app", "--host", "0.0.0.0", "--port", "8081"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  prior-auth:
+    build:
+      context: ../../..
+      dockerfile: workspaces/healthcare/deployments/Dockerfile.portal
+    ports:
+      - "8082:8082"
+    environment:
+      - PHI_ENCRYPTION_KEY=${PHI_ENCRYPTION_KEY}
+    volumes:
+      - auth-data:/app/workspaces/healthcare/prior-auth/data
+    depends_on:
+      - mcp-ehr-server
+    restart: unless-stopped
+    command: ["python", "-m", "uvicorn", "workspaces.healthcare.prior-auth.api.app:app", "--host", "0.0.0.0", "--port", "8082"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: healthcare
+      POSTGRES_USER: ${DB_USER:-health}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-health}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  ehr-data:
+  patient-data:
+  alert-data:
+  auth-data:
+  redis-data:
+  pg-data:

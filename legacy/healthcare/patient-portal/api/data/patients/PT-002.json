@@ -1,0 +1,87 @@
+{
+  "patient_id": "PT-002",
+  "access_code": "5678",
+  "name": "Jane Smith",
+  "discharge_date": "2026-04-04",
+  "diagnoses": [
+    "COPD",
+    "Hypertension"
+  ],
+  "medications": [
+    {
+      "name": "albuterol",
+      "dose": "90mcg",
+      "frequency": "as needed",
+      "instructions": "2 puffs every 4-6 hours as needed"
+    },
+    {
+      "name": "amlodipine",
+      "dose": "5mg",
+      "frequency": "daily",
+      "instructions": "Take in the morning"
+    }
+  ],
+  "discharge_plan": {
+    "risk_level": "moderate",
+    "follow_up_appointments": [
+      {
+        "specialist": "PCP",
+        "condition": "General follow-up",
+        "days_from_discharge": 7,
+        "priority": "high"
+      },
+      {
+        "specialist": "Pulmonology",
+        "condition": "COPD",
+        "days_from_discharge": 14,
+        "priority": "moderate"
+      }
+    ],
+    "warning_signs": [
+      "Increased difficulty breathing",
+      "Change in mucus color or amount",
+      "Fever above 101F",
+      "Chest pain"
+    ],
+    "home_care_instructions": [
+      "Take medications as prescribed",
+      "Use inhaler as directed",
+      "Avoid smoke and respiratory irritants",
+      "Practice breathing exercises daily"
+    ],
+    "social_services_referrals": []
+  },
+  "care_team": {
+    "members": [
+      {
+        "role": "primary_care",
+        "title": "Primary Care Provider",
+        "name": "Dr. Williams",
+        "responsibilities": [
+          "Overall care management"
+        ]
+      },
+      {
+        "role": "pulmonology",
+        "title": "Pulmonologist",
+        "name": "Dr. Chen",
+        "responsibilities": [
+          "COPD management",
+          "Pulmonary function testing"
+        ]
+      }
+    ]
+  },
+  "vitals": [
+    {
+      "patient_id": "PT-002",
+      "metric": "vitals_checkin",
+      "value": 1,
+      "unit": "checkin",
+      "notes": "{\"heart_rate\": 76, \"systolic\": 135, \"diastolic\": 85, \"spo2\": 95, \"temperature\": 98.4}",
+      "timestamp": "2026-04-04T18:12:27.215704+00:00"
+    }
+  ],
+  "symptom_log": [],
+  "created_at": "2026-04-05T00:12:27.215710+00:00"
+}

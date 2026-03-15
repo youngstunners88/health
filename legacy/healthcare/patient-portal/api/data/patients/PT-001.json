@@ -1,0 +1,142 @@
+{
+  "patient_id": "PT-001",
+  "access_code": "1234",
+  "name": "John Doe",
+  "discharge_date": "2026-04-02",
+  "diagnoses": [
+    "CHF",
+    "Type 2 Diabetes"
+  ],
+  "medications": [
+    {
+      "name": "lisinopril",
+      "dose": "20mg",
+      "frequency": "daily",
+      "instructions": "Take in the morning"
+    },
+    {
+      "name": "metformin",
+      "dose": "500mg",
+      "frequency": "twice daily",
+      "instructions": "Take with meals"
+    },
+    {
+      "name": "furosemide",
+      "dose": "40mg",
+      "frequency": "daily",
+      "instructions": "Take in the morning"
+    }
+  ],
+  "discharge_plan": {
+    "risk_level": "high",
+    "follow_up_appointments": [
+      {
+        "specialist": "PCP",
+        "condition": "General follow-up",
+        "days_from_discharge": 7,
+        "priority": "high"
+      },
+      {
+        "specialist": "Cardiology",
+        "condition": "CHF",
+        "days_from_discharge": 7,
+        "priority": "high"
+      },
+      {
+        "specialist": "Endocrinology",
+        "condition": "Type 2 Diabetes",
+        "days_from_discharge": 14,
+        "priority": "moderate"
+      }
+    ],
+    "warning_signs": [
+      "Sudden weight gain (more than 2-3 lbs in a day)",
+      "Increased shortness of breath",
+      "Swelling in legs, ankles, or abdomen",
+      "Blood sugar consistently above 250 or below 70",
+      "Fever above 101F"
+    ],
+    "home_care_instructions": [
+      "Take all medications as prescribed",
+      "Weigh yourself daily at the same time",
+      "Follow a low-sodium diet (less than 2g per day)",
+      "Limit fluid intake to 2 liters per day",
+      "Monitor blood sugar as directed",
+      "Check feet daily for cuts or sores"
+    ],
+    "social_services_referrals": [
+      {
+        "service": "Home health aide",
+        "reason": "Patient lives alone",
+        "urgency": "moderate"
+      },
+      {
+        "service": "Medical transportation",
+        "reason": "No transportation to appointments",
+        "urgency": "high"
+      }
+    ]
+  },
+  "care_team": {
+    "members": [
+      {
+        "role": "primary_care",
+        "title": "Primary Care Provider",
+        "name": "Dr. Smith",
+        "responsibilities": [
+          "Overall care management",
+          "Follow-up coordination"
+        ]
+      },
+      {
+        "role": "cardiology",
+        "title": "Cardiologist",
+        "name": "Dr. Johnson",
+        "responsibilities": [
+          "Heart failure management",
+          "Medication titration"
+        ]
+      },
+      {
+        "role": "pharmacy",
+        "title": "Clinical Pharmacist",
+        "name": "Pharmacy Team",
+        "responsibilities": [
+          "Medication reconciliation",
+          "Drug interaction review"
+        ]
+      }
+    ]
+  },
+  "vitals": [
+    {
+      "patient_id": "PT-001",
+      "metric": "vitals_checkin",
+      "value": 1,
+      "unit": "checkin",
+      "notes": "{\"heart_rate\": 88, \"systolic\": 148, \"diastolic\": 92, \"spo2\": 96, \"temperature\": 98.8, \"weight\": 185.2}",
+      "timestamp": "2026-04-04T22:12:27.215629+00:00"
+    },
+    {
+      "patient_id": "PT-001",
+      "metric": "vitals_checkin",
+      "value": 1,
+      "unit": "checkin",
+      "notes": "{\"heart_rate\": 82, \"systolic\": 142, \"diastolic\": 88, \"spo2\": 97, \"temperature\": 98.6, \"weight\": 184.8}",
+      "timestamp": "2026-04-03T22:12:27.215659+00:00"
+    }
+  ],
+  "symptom_log": [
+    {
+      "patient_id": "PT-001",
+      "symptoms": [
+        "fatigue",
+        "swelling"
+      ],
+      "severity": 4,
+      "notes": "Feeling tired, some ankle swelling",
+      "timestamp": "2026-04-04T20:12:27.215669+00:00"
+    }
+  ],
+  "created_at": "2026-04-05T00:12:27.215676+00:00"
+}

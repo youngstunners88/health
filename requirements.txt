@@ -1,0 +1,12 @@
+fastmcp
+uvicorn[standard]
+langgraph
+pydantic
+python-json-logger
+prometheus-client
+pytest
+faster-whisper
+fastapi
+jinja2
+cryptography
+requests

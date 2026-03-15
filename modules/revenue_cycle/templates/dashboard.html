@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revenue Cycle Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .denial-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .denial-card { background: var(--color-surface); border-radius: var(--radius-md); padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .denial-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+        .denial-bar { height: 8px; background: #E2E8F0; border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+        .denial-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .denial-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
+        .denial-item span:first-child { color: var(--color-text-secondary); }
+        .badge-paid { background: #C6F6D5; color: #276749; }
+        .badge-denied { background: #FED7D7; color: #C53030; }
+        .badge-pending { background: #FEFCBF; color: #975A16; }
+        .badge-submitted { background: #BEE3F8; color: #2A4365; }
+        .badge-processing { background: #E9D8FD; color: #553C9A; }
+        @media (max-width: 768px) {
+            .summary-cards { grid-template-columns: repeat(2, 1fr); }
+            .denial-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div>
+                    <h1>Revenue Cycle</h1>
+                    <p>Claims & Billing</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="active">📊 Dashboard</a>
+                <a href="/new">➕ New Claim</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Revenue Cycle Dashboard</h2>
+                <a href="/new" class="btn btn-primary">+ New Claim</a>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-label">Total Claims</div>
+                    <div class="card-value">{{ stats.total_claims }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Total Charges</div>
+                    <div class="card-value">${{ "{:,.2f}".format(stats.total_charges) }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Total Paid</div>
+                    <div class="card-value" style="color:var(--color-success)">${{ "{:,.2f}".format(stats.total_paid) }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Denial Rate</div>
+                    <div class="card-value" style="color:{% if stats.denial_rate > 10 %}var(--color-error){% else %}var(--color-success){% endif %}">{{ "%.1f"|format(stats.denial_rate) }}%</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Avg Days to Payment</div>
+                    <div class="card-value">{{ "%.1f"|format(stats.avg_days_to_payment) }}</div>
+                </div>
+            </div>
+
+            <div class="page-header" style="margin-top:8px;">
+                <h3 style="font-size:18px;font-weight:600;">Claims</h3>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Claim ID</th>
+                        <th>Patient</th>
+                        <th>Payer</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for claim in claims %}
+                    <tr>
+                        <td><strong>{{ claim.claim_id }}</strong></td>
+                        <td>{{ claim.patient_name }}</td>
+                        <td>{{ claim.payer_name }}</td>
+                        <td>${{ "{:,.2f}".format(claim.amount) }}</td>
+                        <td><span class="badge badge-{{ claim.status }}">{{ claim.status.replace('_', ' ') }}</span></td>
+                        <td>{{ claim.submitted_date[:10] }}</td>
+                        <td><a href="/claim/{{ claim.claim_id }}" class="action-link">View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if not claims %}
+            <div style="text-align:center;padding:60px;color:var(--color-text-tertiary);">
+                <p style="font-size:18px;margin-bottom:8px;">No claims submitted yet</p>
+                <a href="/new" class="btn btn-primary">Submit First Claim</a>
+            </div>
+            {% endif %}
+
+            {% if denial_analysis %}
+            <div class="page-header" style="margin-top:32px;">
+                <h3 style="font-size:18px;font-weight:600;">Denial Analysis</h3>
+            </div>
+            <div class="denial-grid">
+                <div class="denial-card">
+                    <h4>Top Denial Reasons</h4>
+                    {% for reason in denial_analysis.top_denial_reasons %}
+                    <div class="denial-item">
+                        <span>{{ reason.reason }}</span>
+                        <span><strong>{{ reason.count }}</strong> ({{ reason.percentage }}%)</span>
+                    </div>
+                    <div class="denial-bar">
+                        <div class="denial-bar-fill" style="width:{{ reason.percentage }}%;background:var(--color-error);"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="denial-card">
+                    <h4>Payer Denial Rates</h4>
+                    {% for payer in denial_analysis.payer_denial_rates %}
+                    <div class="denial-item">
+                        <span>{{ payer.payer_name }}</span>
+                        <span><strong>{{ "%.1f"|format(payer.denial_rate) }}%</strong></span>
+                    </div>
+                    <div class="denial-bar">
+                        <div class="denial-bar-fill" style="width:{{ payer.denial_rate }}%;background:{% if payer.denial_rate > 15 %}var(--color-error){% elif payer.denial_rate > 8 %}var(--color-warning){% else %}var(--color-success){% endif %};"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Trials Matching Dashboard</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --danger: #dc2626;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); color: var(--gray-800); line-height: 1.5; }
+        .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 1.5rem 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header h1 { font-size: 1.5rem; font-weight: 600; }
+        .header p { opacity: 0.9; font-size: 0.875rem; margin-top: 0.25rem; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: white; border-radius: 8px; padding: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-left: 4px solid var(--primary); }
+        .stat-card .label { font-size: 0.75rem; text-transform: uppercase; color: var(--gray-600); letter-spacing: 0.05em; }
+        .stat-card .value { font-size: 1.75rem; font-weight: 700; color: var(--gray-900); margin-top: 0.25rem; }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 2px solid var(--gray-200); }
+        .tab { padding: 0.75rem 1.25rem; cursor: pointer; border: none; background: none; font-size: 0.875rem; font-weight: 500; color: var(--gray-600); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; }
+        .tab:hover { color: var(--primary); }
+        .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .card { background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        .card h2 { font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: var(--gray-900); }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; gap: 0.375rem; }
+        .form-group label { font-size: 0.8125rem; font-weight: 500; color: var(--gray-700); }
+        .form-group input, .form-group select, .form-group textarea { padding: 0.625rem 0.75rem; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 0.875rem; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .form-group textarea { min-height: 80px; resize: vertical; font-family: monospace; }
+        .btn { padding: 0.625rem 1.25rem; border: none; border-radius: 6px; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
+        .btn-secondary:hover { background: var(--gray-200); }
+        .btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+        .results-table { width: 100%; border-collapse: collapse; }
+        .results-table th { text-align: left; padding: 0.75rem 1rem; font-size: 0.75rem; text-transform: uppercase; color: var(--gray-600); background: var(--gray-50); border-bottom: 1px solid var(--gray-200); }
+        .results-table td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--gray-100); font-size: 0.875rem; }
+        .results-table tr:hover { background: var(--gray-50); }
+        .score { display: inline-flex; align-items: center; gap: 0.5rem; }
+        .score-bar { width: 100px; height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .score-fill.high { background: var(--success); }
+        .score-fill.medium { background: var(--warning); }
+        .score-fill.low { background: var(--danger); }
+        .badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warning { background: #fef9c3; color: #854d0e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        .search-form { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+        .search-form .form-group { flex: 1; min-width: 200px; }
+        .trial-detail { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+        .criteria-list { list-style: none; padding: 0; }
+        .criteria-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--gray-100); font-size: 0.875rem; display: flex; align-items: flex-start; gap: 0.5rem; }
+        .criteria-list li::before { content: ''; flex-shrink: 0; width: 6px; height: 6px; border-radius: 50%; margin-top: 0.5rem; }
+        .criteria-list.inclusion li::before { background: var(--success); }
+        .criteria-list.exclusion li::before { background: var(--danger); }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 12px; max-width: 900px; width: 95%; max-height: 90vh; overflow-y: auto; padding: 2rem; position: relative; }
+        .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--gray-600); }
+        .loading { display: none; text-align: center; padding: 2rem; }
+        .loading.active { display: block; }
+        .spinner { display: inline-block; width: 40px; height: 40px; border: 3px solid var(--gray-200); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty-state { text-align: center; padding: 3rem; color: var(--gray-600); }
+        .empty-state svg { width: 64px; height: 64px; margin-bottom: 1rem; opacity: 0.5; }
+        .reasons { font-size: 0.8125rem; }
+        .reasons .matched { color: var(--success); }
+        .reasons .excluded { color: var(--danger); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 768px) { .trial-detail, .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Clinical Trials Matching Dashboard</h1>
+        <p>Match patients to clinical trials based on EHR data</p>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Total Trials</div>
+                <div class="value">{{ stats.total_trials }}</div>
+            </div>
+            <div class="stat-card" style="border-left-color: var(--success)">
+                <div class="label">Conditions Covered</div>
+                <div class="value">{{ stats.by_condition | length }}</div>
+            </div>
+            <div class="stat-card" style="border-left-color: var(--warning)">
+                <div class="label">Enrollment Rate</div>
+                <div class="value">{{ stats.enrollment_rate }}%</div>
+            </div>
+            <div class="stat-card" style="border-left-color: #8b5cf6">
+                <div class="label">Matches Performed</div>
+                <div class="value" id="matchCount">{{ stats.total_matches_performed }}</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('match')">Patient Matching</button>
+            <button class="tab" onclick="switchTab('search')">Trial Search</button>
+            <button class="tab" onclick="switchTab('browse')">Browse All Trials</button>
+        </div>
+
+        <div id="tab-match" class="tab-content active">
+            <div class="card">
+                <h2>Patient EHR Input</h2>
+                <form id="matchForm" onsubmit="return matchPatient(event)">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="patientId">Patient ID</label>
+                            <input type="text" id="patientId" value="PT-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="age">Age</label>
+                            <input type="number" id="age" value="65" min="0" max="150" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">Gender</label>
+                            <select id="gender">
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bmi">BMI (optional)</label>
+                            <input type="number" id="bmi" step="0.1" placeholder="e.g. 28.5">
+                        </div>
+                    </div>
+                    <div class="form-grid" style="margin-top: 1rem;">
+                        <div class="form-group">
+                            <label for="diagnoses">ICD-10 Diagnoses (comma-separated)</label>
+                            <textarea id="diagnoses" placeholder="e.g. I50, I10, E11.9">I50, I10</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="medications">Current Medications (comma-separated)</label>
+                            <textarea id="medications" placeholder="e.g. lisinopril, furosemide, metformin">lisinopril, furosemide, carvedilol</textarea>
+                        </div>
+                    </div>
+                    <div class="form-grid" style="margin-top: 1rem;">
+                        <div class="form-group">
+                            <label for="comorbidities">Comorbidities (comma-separated)</label>
+                            <textarea id="comorbidities" placeholder="e.g. obesity, hypertension">hypertension</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="priorTreatments">Prior Treatments (comma-separated)</label>
+                            <textarea id="priorTreatments" placeholder="e.g. ACE inhibitor, beta-blocker">ACE inhibitor, beta-blocker</textarea>
+                        </div>
+                    </div>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
+                        <button type="submit" class="btn btn-primary">Find Matching Trials</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadSamplePatient('chf')">Sample: CHF Patient</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadSamplePatient('diabetes')">Sample: Diabetes</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadSamplePatient('copd')">Sample: COPD</button>
+                        <button type="button" class="btn btn-secondary" onclick="loadSamplePatient('depression')">Sample: Depression</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="matchLoading" class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem; color: var(--gray-600);">Evaluating trials...</p>
+            </div>
+
+            <div id="matchResults" style="display: none;">
+                <div class="card">
+                    <h2>Matching Results</h2>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <span class="badge badge-success" id="eligibleCount">0 Eligible</span>
+                        <span class="badge badge-warning" id="partialCount">0 Partial</span>
+                        <span class="badge badge-danger" id="ineligibleCount">0 Ineligible</span>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Trial ID</th>
+                                    <th>Title</th>
+                                    <th>Condition</th>
+                                    <th>Phase</th>
+                                    <th>Score</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="matchTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-search" class="tab-content">
+            <div class="card">
+                <h2>Search Trials</h2>
+                <form class="search-form" onsubmit="return searchTrials(event)">
+                    <div class="form-group">
+                        <label for="searchCondition">Condition</label>
+                        <input type="text" id="searchCondition" placeholder="e.g. CHF, diabetes, COPD">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchLocation">Location</label>
+                        <input type="text" id="searchLocation" placeholder="e.g. New York, Boston">
+                    </div>
+                    <div class="form-group">
+                        <label for="searchPhase">Phase</label>
+                        <select id="searchPhase">
+                            <option value="">All Phases</option>
+                            <option value="Phase 1">Phase 1</option>
+                            <option value="Phase 2">Phase 2</option>
+                            <option value="Phase 3">Phase 3</option>
+                            <option value="Phase 4">Phase 4</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </form>
+            </div>
+            <div id="searchResults"></div>
+        </div>
+
+        <div id="tab-browse" class="tab-content">
+            <div class="card">
+                <h2>All Clinical Trials</h2>
+                <div id="allTrialsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="trialModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let allTrials = [];
+        let matchResults = [];
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tab).classList.add('active');
+            if (tab === 'browse' && allTrials.length === 0) loadAllTrials();
+        }
+
+        async function matchPatient(e) {
+            e.preventDefault();
+            const loading = document.getElementById('matchLoading');
+            const results = document.getElementById('matchResults');
+            loading.classList.add('active');
+            results.style.display = 'none';
+
+            const patient = {
+                patient_id: document.getElementById('patientId').value,
+                age: parseInt(document.getElementById('age').value),
+                gender: document.getElementById('gender').value,
+                diagnoses: document.getElementById('diagnoses').value.split(',').map(s => s.trim()).filter(Boolean),
+                medications: document.getElementById('medications').value.split(',').map(s => s.trim()).filter(Boolean),
+                comorbidities: document.getElementById('comorbidities').value.split(',').map(s => s.trim()).filter(Boolean),
+                prior_treatments: document.getElementById('priorTreatments').value.split(',').map(s => s.trim()).filter(Boolean),
+                bmi: document.getElementById('bmi').value ? parseFloat(document.getElementById('bmi').value) : null
+            };
+
+            try {
+                const resp = await fetch(`${API_BASE}/api/match`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(patient)
+                });
+                const data = await resp.json();
+                matchResults = data.matches || [];
+                renderMatchResults(matchResults);
+                document.getElementById('matchCount').textContent = parseInt(document.getElementById('matchCount').textContent) + 1;
+            } catch (err) {
+                alert('Error: ' + err.message);
+            } finally {
+                loading.classList.remove('active');
+            }
+            return false;
+        }
+
+        function renderMatchResults(results) {
+            const tbody = document.getElementById('matchTableBody');
+            const resultsDiv = document.getElementById('matchResults');
+            let eligible = 0, partial = 0, ineligible = 0;
+
+            tbody.innerHTML = results.map(r => {
+                if (r.eligible) eligible++;
+                else if (r.eligibility_score >= 50) partial++;
+                else ineligible++;
+
+                const scoreClass = r.eligibility_score >= 80 ? 'high' : r.eligibility_score >= 50 ? 'medium' : 'low';
+                const badgeClass = r.eligible ? 'badge-success' : r.eligibility_score >= 50 ? 'badge-warning' : 'badge-danger';
+                const badgeText = r.eligible ? 'Eligible' : r.eligibility_score >= 50 ? 'Partial' : 'Ineligible';
+
+                return `<tr>
+                    <td><strong>${r.trial_id}</strong></td>
+                    <td>${r.trial_title}</td>
+                    <td>${getTrialCondition(r.trial_id)}</td>
+                    <td>${getTrialPhase(r.trial_id)}</td>
+                    <td>
+                        <div class="score">
+                            <div class="score-bar"><div class="score-fill ${scoreClass}" style="width:${r.eligibility_score}%"></div></div>
+                            <span>${r.eligibility_score}%</span>
+                        </div>
+                    </td>
+                    <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                    <td><button class="btn btn-sm btn-secondary" onclick="showEligibilityDetails('${r.trial_id}')">Details</button></td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('eligibleCount').textContent = eligible + ' Eligible';
+            document.getElementById('partialCount').textContent = partial + ' Partial';
+            document.getElementById('ineligibleCount').textContent = ineligible + ' Ineligible';
+            resultsDiv.style.display = 'block';
+        }
+
+        function getTrialCondition(trialId) {
+            const prefix = trialId.split('-')[0];
+            const map = { 'CHF': 'CHF', 'DM': 'Diabetes', 'COPD': 'COPD', 'CAN': 'Cancer', 'AD': "Alzheimer's", 'HTN': 'Hypertension', 'OB': 'Obesity', 'DEP': 'Depression' };
+            return map[prefix] || '';
+        }
+
+        function getTrialPhase(trialId) {
+            const trial = allTrials.find(t => t.trial_id === trialId);
+            return trial ? trial.phase : '';
+        }
+
+        async function showEligibilityDetails(trialId) {
+            const match = matchResults.find(r => r.trial_id === trialId);
+            const trial = allTrials.find(t => t.trial_id === trialId);
+            if (!trial) {
+                const resp = await fetch(`${API_BASE}/api/trials/${trialId}`);
+                const data = await resp.json();
+                showTrialDetail(data, match);
+                return;
+            }
+            showTrialDetail(trial, match);
+        }
+
+        function showTrialDetail(trial, match) {
+            const modal = document.getElementById('trialModal');
+            const body = document.getElementById('modalBody');
+
+            let eligibilityHtml = '';
+            if (match) {
+                eligibilityHtml = `
+                    <div class="card" style="margin-top: 1rem;">
+                        <h2>Your Eligibility</h2>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <span class="badge ${match.eligible ? 'badge-success' : match.eligibility_score >= 50 ? 'badge-warning' : 'badge-danger'}" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                                ${match.eligible ? 'ELIGIBLE' : match.eligibility_score >= 50 ? 'PARTIAL MATCH' : 'INELIGIBLE'}
+                            </span>
+                            <span style="font-size: 1.5rem; font-weight: 700;">${match.eligibility_score}%</span>
+                        </div>
+                        ${match.reasons_matched.length ? `<h3 style="font-size: 0.875rem; color: var(--success); margin-bottom: 0.5rem;">Matched Criteria</h3>
+                        <ul class="criteria-list inclusion">${match.reasons_matched.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+                        ${match.reasons_excluded.length ? `<h3 style="font-size: 0.875rem; color: var(--danger); margin: 1rem 0 0.5rem;">Exclusion Reasons</h3>
+                        <ul class="criteria-list exclusion">${match.reasons_excluded.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+                        ${match.missing_criteria.length ? `<h3 style="font-size: 0.875rem; color: var(--warning); margin: 1rem 0 0.5rem;">Missing Information</h3>
+                        <ul class="criteria-list">${match.missing_criteria.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+                    </div>`;
+            }
+
+            body.innerHTML = `
+                <h1 style="font-size: 1.25rem; margin-bottom: 0.5rem;">${trial.title}</h1>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                    <span class="badge badge-info">${trial.condition}</span>
+                    <span class="badge badge-info">${trial.phase}</span>
+                    <span class="badge ${trial.status === 'Recruiting' ? 'badge-success' : 'badge-warning'}">${trial.status}</span>
+                    <span class="badge badge-info">${trial.sponsor}</span>
+                </div>
+                <p style="color: var(--gray-600); margin-bottom: 1rem;">${trial.description || ''}</p>
+                <div class="grid-2">
+                    <div>
+                        <p><strong>Age Range:</strong> ${trial.min_age} - ${trial.max_age}</p>
+                        <p><strong>Gender:</strong> ${trial.gender}</p>
+                        <p><strong>Enrollment:</strong> ${trial.enrollment_current} / ${trial.enrollment_target}</p>
+                    </div>
+                    <div>
+                        <p><strong>Locations:</strong> ${trial.locations.join(', ')}</p>
+                        <p><strong>ICD-10 Codes:</strong> ${trial.icd10_codes.join(', ')}</p>
+                        <p><strong>Period:</strong> ${trial.start_date} to ${trial.end_date}</p>
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top: 1rem;">
+                    <div>
+                        <h3 style="font-size: 0.875rem; color: var(--success); margin-bottom: 0.5rem;">Inclusion Criteria</h3>
+                        <ul class="criteria-list inclusion">${trial.inclusion_criteria.map(c => `<li>${c}</li>`).join('')}</ul>
+                    </div>
+                    <div>
+                        <h3 style="font-size: 0.875rem; color: var(--danger); margin-bottom: 0.5rem;">Exclusion Criteria</h3>
+                        <ul class="criteria-list exclusion">${trial.exclusion_criteria.map(c => `<li>${c}</li>`).join('')}</ul>
+                    </div>
+                </div>
+                ${eligibilityHtml}
+            `;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('trialModal').classList.remove('active');
+        }
+
+        async function searchTrials(e) {
+            e.preventDefault();
+            const params = new URLSearchParams({
+                condition: document.getElementById('searchCondition').value,
+                location: document.getElementById('searchLocation').value,
+                phase: document.getElementById('searchPhase').value,
+            });
+            const resp = await fetch(`${API_BASE}/api/search?${params}`);
+            const data = await resp.json();
+            renderSearchResults(data.trials);
+            return false;
+        }
+
+        function renderSearchResults(trials) {
+            const container = document.getElementById('searchResults');
+            if (!trials.length) {
+                container.innerHTML = '<div class="card"><div class="empty-state"><p>No trials found matching your criteria.</p></div></div>';
+                return;
+            }
+            container.innerHTML = `<div class="card"><p style="margin-bottom: 1rem; color: var(--gray-600);">${trials.length} trial(s) found</p>
+                <div class="results-table">${trials.map(t => `
+                    <div style="padding: 1rem; border-bottom: 1px solid var(--gray-100); cursor: pointer;" onclick="showTrialDetail(allTrials.find(x=>x.trial_id==='${t.trial_id}') || ${JSON.stringify(t).replace(/"/g, '&quot;')})">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${t.trial_id}</strong> - ${t.title}
+                                <div style="font-size: 0.75rem; color: var(--gray-600); margin-top: 0.25rem;">
+                                    ${t.condition} | ${t.phase} | ${t.sponsor}
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <span class="badge ${t.status === 'Recruiting' ? 'badge-success' : 'badge-warning'}">${t.status}</span>
+                                <div style="font-size: 0.75rem; color: var(--gray-600); margin-top: 0.25rem;">${t.locations.join(', ')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}</div></div>`;
+        }
+
+        async function loadAllTrials() {
+            const resp = await fetch(`${API_BASE}/api/trials`);
+            const data = await resp.json();
+            allTrials = data.trials;
+            const container = document.getElementById('allTrialsList');
+            container.innerHTML = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem;">
+                ${data.trials.map(t => `
+                    <div class="card" style="cursor: pointer; margin-bottom: 0;" onclick="showTrialDetail(allTrials.find(x=>x.trial_id==='${t.trial_id}'))">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span class="badge badge-info">${t.trial_id}</span>
+                            <span class="badge ${t.status === 'Recruiting' ? 'badge-success' : 'badge-warning'}">${t.status}</span>
+                        </div>
+                        <h3 style="font-size: 0.9375rem; margin-bottom: 0.5rem;">${t.title}</h3>
+                        <div style="font-size: 0.8125rem; color: var(--gray-600);">
+                            <p>${t.condition} | ${t.phase} | ${t.sponsor}</p>
+                            <p style="margin-top: 0.25rem;">${t.locations.join(', ')}</p>
+                            <p style="margin-top: 0.25rem;">Enrollment: ${t.enrollment_current}/${t.enrollment_target}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>`;
+        }
+
+        function loadSamplePatient(type) {
+            const samples = {
+                chf: { id: 'PT-CHF-001', age: 68, gender: 'Male', diagnoses: 'I50, I10', meds: 'lisinopril, furosemide, carvedilol', comorbidities: 'hypertension', treatments: 'ACE inhibitor, beta-blocker', bmi: 29.5 },
+                diabetes: { id: 'PT-DM-001', age: 55, gender: 'Female', diagnoses: 'E11.9, E66', meds: 'metformin, lisinopril', comorbidities: 'obesity, hypertension', treatments: '', bmi: 32.1 },
+                copd: { id: 'PT-COPD-001', age: 62, gender: 'Male', diagnoses: 'J44.1, I10', meds: 'albuterol, tiotropium', comorbidities: 'hypertension', treatments: 'bronchodilator', bmi: 24.8 },
+                depression: { id: 'PT-DEP-001', age: 42, gender: 'Female', diagnoses: 'F33.1', meds: 'sertraline', comorbidities: '', treatments: 'antidepressant', bmi: 26.3 }
+            };
+            const s = samples[type];
+            document.getElementById('patientId').value = s.id;
+            document.getElementById('age').value = s.age;
+            document.getElementById('gender').value = s.gender;
+            document.getElementById('diagnoses').value = s.diagnoses;
+            document.getElementById('medications').value = s.meds;
+            document.getElementById('comorbidities').value = s.comorbidities;
+            document.getElementById('priorTreatments').value = s.treatments;
+            document.getElementById('bmi').value = s.bmi;
+        }
+
+        document.getElementById('trialModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        (async function init() {
+            const resp = await fetch(`${API_BASE}/api/trials`);
+            const data = await resp.json();
+            allTrials = data.trials;
+        })();
+    </script>
+</body>
+</html>

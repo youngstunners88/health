@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Claim - Revenue Cycle</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .procedure-row { display: grid; grid-template-columns: 1fr 2fr 1fr 60px 120px 40px; gap: 8px; align-items: end; margin-bottom: 8px; }
+        .procedure-row input, .procedure-row select { padding: 8px 10px; font-size: 13px; }
+        .procedure-header { display: grid; grid-template-columns: 1fr 2fr 1fr 60px 120px 40px; gap: 8px; font-size: 11px; font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; margin-bottom: 4px; }
+        .remove-proc { background: none; border: none; color: var(--color-error); cursor: pointer; font-size: 18px; padding: 4px; }
+        .diagnosis-row { display: flex; gap: 8px; align-items: end; margin-bottom: 8px; }
+        .diagnosis-row input { flex: 1; padding: 8px 10px; font-size: 13px; }
+        .remove-dx { background: none; border: none; color: var(--color-error); cursor: pointer; font-size: 18px; padding: 4px; }
+        @media (max-width: 768px) {
+            .procedure-row, .procedure-header { grid-template-columns: 1fr 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div>
+                    <h1>Revenue Cycle</h1>
+                    <p>Claims & Billing</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">📊 Dashboard</a>
+                <a href="/new" class="active">➕ New Claim</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Submit New Claim</h2>
+            </div>
+
+            <div class="detail-section">
+                <form id="claimForm">
+                    <h3 style="margin-bottom:16px;">Patient Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="patient_id">Patient ID</label>
+                            <input type="text" id="patient_id" name="patient_id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient_name">Patient Name</label>
+                            <input type="text" id="patient_name" name="patient_name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="patient_dob">Date of Birth</label>
+                            <input type="date" id="patient_dob" name="patient_dob" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="member_id">Member ID</label>
+                            <input type="text" id="member_id" name="member_id" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="group_number">Group Number</label>
+                            <input type="text" id="group_number" name="group_number">
+                        </div>
+                        <div class="form-group">
+                            <label for="account_number">Account Number</label>
+                            <input type="text" id="account_number" name="account_number">
+                        </div>
+                    </div>
+
+                    <h3 style="margin:24px 0 16px;">Payer Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="payer_name">Insurance Payer</label>
+                            <select id="payer_name" name="payer_name" required>
+                                <option value="">Select payer...</option>
+                                {% for payer in payers %}
+                                <option value="{{ payer.name }}">{{ payer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="payer_id">Payer ID</label>
+                            <input type="text" id="payer_id" name="payer_id" required placeholder="e.g., BCBS, UHC, AETNA">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="plan_type">Plan Type</label>
+                            <select id="plan_type" name="plan_type">
+                                <option value="PPO">PPO</option>
+                                <option value="HMO">HMO</option>
+                                <option value="EPO">EPO</option>
+                                <option value="POS">POS</option>
+                                <option value="Medicare">Medicare</option>
+                                <option value="Medicaid">Medicaid</option>
+                                <option value="Self-Pay">Self-Pay</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="policy_number">Policy Number</label>
+                            <input type="text" id="policy_number" name="policy_number">
+                        </div>
+                    </div>
+
+                    <h3 style="margin:24px 0 16px;">Provider Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="provider_name">Provider Name</label>
+                            <input type="text" id="provider_name" name="provider_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="provider_npi">Provider NPI</label>
+                            <input type="text" id="provider_npi" name="provider_npi" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="service_date">Date of Service</label>
+                            <input type="date" id="service_date" name="service_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="place_of_service">Place of Service</label>
+                            <select id="place_of_service" name="place_of_service">
+                                <option value="11">Office (11)</option>
+                                <option value="21">Inpatient Hospital (21)</option>
+                                <option value="22">Outpatient Hospital (22)</option>
+                                <option value="23">Emergency Room (23)</option>
+                                <option value="31">Skilled Nursing Facility (31)</option>
+                                <option value="12">Home (12)</option>
+                                <option value="02">Telehealth (02)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="prior_auth_id">Prior Authorization ID (if applicable)</label>
+                        <input type="text" id="prior_auth_id" name="prior_auth_id" placeholder="e.g., AUTH-2024-XXXXX">
+                    </div>
+
+                    <h3 style="margin:24px 0 16px;">Diagnoses (ICD-10)</h3>
+                    <div id="diagnosesContainer">
+                        <div class="diagnosis-row">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>ICD-10 Code</label>
+                                <input type="text" name="dx_code[]" placeholder="e.g., I50.9" required>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label>Description</label>
+                                <input type="text" name="dx_desc[]" placeholder="e.g., Heart failure, unspecified">
+                            </div>
+                            <button type="button" class="remove-dx" onclick="removeDiagnosis(this)" title="Remove">&times;</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addDiagnosis()" style="margin-top:8px;">+ Add Diagnosis</button>
+
+                    <h3 style="margin:24px 0 16px;">Procedures (CPT)</h3>
+                    <div class="procedure-header">
+                        <span>CPT Code</span>
+                        <span>Description</span>
+                        <span>Modifiers</span>
+                        <span>Units</span>
+                        <span>Charge ($)</span>
+                        <span></span>
+                    </div>
+                    <div id="proceduresContainer">
+                        <div class="procedure-row">
+                            <input type="text" name="cpt_code[]" placeholder="e.g., 99213" required>
+                            <input type="text" name="cpt_desc[]" placeholder="e.g., Office visit, established patient">
+                            <input type="text" name="cpt_modifiers[]" placeholder="e.g., 25, 59">
+                            <input type="number" name="cpt_units[]" value="1" min="1" required>
+                            <input type="number" name="cpt_charge[]" placeholder="0.00" step="0.01" min="0" required>
+                            <button type="button" class="remove-proc" onclick="removeProcedure(this)" title="Remove">&times;</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="addProcedure()" style="margin-top:8px;">+ Add Procedure</button>
+
+                    <div style="text-align:right;margin-top:16px;font-size:18px;font-weight:700;">
+                        Total Charge: $<span id="totalCharge">0.00</span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top:16px;">Submit Claim</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function addDiagnosis() {
+            const container = document.getElementById('diagnosesContainer');
+            const row = document.createElement('div');
+            row.className = 'diagnosis-row';
+            row.innerHTML = `
+                <div class="form-group" style="margin-bottom:0;">
+                    <input type="text" name="dx_code[]" placeholder="e.g., E11.9" required>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <input type="text" name="dx_desc[]" placeholder="Description">
+                </div>
+                <button type="button" class="remove-dx" onclick="removeDiagnosis(this)" title="Remove">&times;</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeDiagnosis(btn) {
+            const container = document.getElementById('diagnosesContainer');
+            if (container.children.length > 1) btn.parentElement.remove();
+        }
+
+        function addProcedure() {
+            const container = document.getElementById('proceduresContainer');
+            const row = document.createElement('div');
+            row.className = 'procedure-row';
+            row.innerHTML = `
+                <input type="text" name="cpt_code[]" placeholder="e.g., 99214" required>
+                <input type="text" name="cpt_desc[]" placeholder="Description">
+                <input type="text" name="cpt_modifiers[]" placeholder="Modifiers">
+                <input type="number" name="cpt_units[]" value="1" min="1" required>
+                <input type="number" name="cpt_charge[]" placeholder="0.00" step="0.01" min="0" required>
+                <button type="button" class="remove-proc" onclick="removeProcedure(this)" title="Remove">&times;</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function removeProcedure(btn) {
+            const container = document.getElementById('proceduresContainer');
+            if (container.children.length > 1) btn.parentElement.remove();
+            updateTotal();
+        }
+
+        function updateTotal() {
+            let total = 0;
+            document.querySelectorAll('input[name="cpt_charge[]"]').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            document.getElementById('totalCharge').textContent = total.toFixed(2);
+        }
+
+        document.querySelectorAll('input[name="cpt_charge[]"]').forEach(input => {
+            input.addEventListener('input', updateTotal);
+        });
+
+        document.getElementById('claimForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+
+            const diagnoses = [];
+            const dxCodes = form.querySelectorAll('input[name="dx_code[]"]');
+            const dxDescs = form.querySelectorAll('input[name="dx_desc[]"]');
+            dxCodes.forEach((input, i) => {
+                if (input.value) diagnoses.push({ code: input.value, description: dxDescs[i]?.value || '' });
+            });
+
+            const procedures = [];
+            const cptCodes = form.querySelectorAll('input[name="cpt_code[]"]');
+            const cptDescs = form.querySelectorAll('input[name="cpt_desc[]"]');
+            const cptMods = form.querySelectorAll('input[name="cpt_modifiers[]"]');
+            const cptUnits = form.querySelectorAll('input[name="cpt_units[]"]');
+            const cptCharges = form.querySelectorAll('input[name="cpt_charge[]"]');
+            cptCodes.forEach((input, i) => {
+                if (input.value) {
+                    const modifiers = cptMods[i]?.value ? cptMods[i].value.split(',').map(s => s.trim()) : [];
+                    procedures.push({
+                        cpt_code: input.value,
+                        description: cptDescs[i]?.value || '',
+                        modifiers: modifiers,
+                        units: parseInt(cptUnits[i]?.value) || 1,
+                        charge: parseFloat(cptCharges[i]?.value) || 0
+                    });
+                }
+            });
+
+            const data = {
+                patient_id: form.patient_id.value,
+                patient_name: form.patient_name.value,
+                patient_dob: form.patient_dob.value,
+                member_id: form.member_id.value,
+                group_number: form.group_number.value,
+                account_number: form.account_number.value,
+                payer_name: form.payer_name.value,
+                payer_id: form.payer_id.value,
+                plan_type: form.plan_type.value,
+                policy_number: form.policy_number.value,
+                provider_name: form.provider_name.value,
+                provider_npi: form.provider_npi.value,
+                service_date: form.service_date.value,
+                place_of_service: form.place_of_service.value,
+                prior_auth_id: form.prior_auth_id.value,
+                diagnoses: diagnoses,
+                procedures: procedures,
+                total_charge: procedures.reduce((sum, p) => sum + p.charge, 0)
+            };
+
+            try {
+                const res = await fetch('/api/claims', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    window.location.href = `/claim/${result.claim_id}`;
+                } else {
+                    const err = await res.json();
+                    alert('Error: ' + (err.detail || 'Failed to submit claim'));
+                }
+            } catch (err) {
+                alert('Error submitting claim');
+            }
+        });
+    </script>
+</body>
+</html>

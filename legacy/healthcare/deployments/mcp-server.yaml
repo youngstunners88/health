@@ -1,0 +1,10 @@
+# MCP Server Deployment (simple Docker Compose for local dev)
+version: '3.8'
+services:
+  mcp-ehr-server:
+    build: .
+    ports:
+      - "8001:8001"
+    command: uv run protocols/mcp_ehr_server.py
+    environment:
+      - MCP_PORT=8001

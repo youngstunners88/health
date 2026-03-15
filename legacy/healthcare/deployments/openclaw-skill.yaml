@@ -1,0 +1,9 @@
+# OpenClaw Skill Registration for Healthcare Agents
+skill_name: healthcare-agent-swarm
+description: >
+  Multi-agent discharge orchestration swarm using LangGraph, MCP, and A2A.
+  Use when Kofi needs to run the healthcare discharge coordination pipeline.
+inputs:
+  - patient_id: str
+outputs:
+  - final_state: dict

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Dashboard - HealthCare Portal</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header { background: var(--primary); color: white; padding: 20px 0; margin-bottom: 30px; }
+        header .container { display: flex; justify-content: space-between; align-items: center; }
+        header h1 { font-size: 1.5rem; }
+        header nav a { color: white; text-decoration: none; margin-left: 20px; opacity: 0.9; }
+        header nav a:hover { opacity: 1; text-decoration: underline; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 30px; }
+        .stat-card { background: var(--card); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-card .label { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 4px; }
+        .stat-card .value { font-size: 2rem; font-weight: 700; }
+        .stat-card .value.success { color: var(--success); }
+        .stat-card .value.danger { color: var(--danger); }
+        .stat-card .value.primary { color: var(--primary); }
+        .card { background: var(--card); border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 24px; }
+        .card h2 { font-size: 1.125rem; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9375rem; transition: border-color 0.2s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .btn { display: inline-flex; align-items: center; padding: 10px 20px; border: none; border-radius: 8px; font-size: 0.9375rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+        .btn-outline:hover { background: var(--bg); }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th, .table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+        .table th { font-weight: 600; color: var(--text-muted); background: var(--bg); }
+        .badge { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 0.75rem; font-weight: 500; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .badge-info { background: #dbeafe; color: #1e40af; }
+        .badge-pending { background: #f1f5f9; color: #475569; }
+        .refresh-btn { float: right; }
+        #send-result { margin-top: 16px; padding: 12px; border-radius: 8px; display: none; }
+        #send-result.success { display: block; background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        #send-result.error { display: block; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 768px) { .form-row, .two-col { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Notification Dashboard</h1>
+            <nav>
+                <a href="/">Dashboard</a>
+                <a href="/schedule">Schedule</a>
+                <a href="/docs">API Docs</a>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card">
+                <div class="label">Total Sent</div>
+                <div class="value primary" id="stat-total">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Delivered</div>
+                <div class="value success" id="stat-delivered">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Failed</div>
+                <div class="value danger" id="stat-failed">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Delivery Rate</div>
+                <div class="value" id="stat-rate">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Active Schedules</div>
+                <div class="value" id="stat-schedules">0</div>
+            </div>
+        </div>
+
+        <div class="two-col">
+            <div class="card">
+                <h2>Send Notification</h2>
+                <form id="send-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="send-patient-id">Patient ID</label>
+                            <input type="text" id="send-patient-id" required placeholder="patient_123">
+                        </div>
+                        <div class="form-group">
+                            <label for="send-phone">Phone Number</label>
+                            <input type="tel" id="send-phone" required placeholder="+15559876543">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="send-channel">Channel</label>
+                            <select id="send-channel">
+                                <option value="sms">SMS</option>
+                                <option value="whatsapp">WhatsApp</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="send-type">Type</label>
+                            <select id="send-type">
+                                <option value="manual">Manual</option>
+                                <option value="alert">Alert</option>
+                                <option value="reminder">Reminder</option>
+                                <option value="checkin">Check-in</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="send-message">Message</label>
+                        <textarea id="send-message" rows="3" required placeholder="Enter notification message..." maxlength="1600"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Notification</button>
+                </form>
+                <div id="send-result"></div>
+            </div>
+
+            <div class="card">
+                <h2>Quick Actions</h2>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <a href="/schedule" class="btn btn-outline" style="text-align:center; text-decoration:none;">Schedule Medication Reminder</a>
+                    <a href="/schedule" class="btn btn-outline" style="text-align:center; text-decoration:none;">Schedule Appointment Alert</a>
+                    <a href="/schedule" class="btn btn-outline" style="text-align:center; text-decoration:none;">Schedule Symptom Check-in</a>
+                    <button class="btn btn-outline" onclick="loadStats()">Refresh Stats</button>
+                    <button class="btn btn-outline" onclick="loadHistory()">Refresh History</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>
+                Recent Notifications
+                <button class="btn btn-outline refresh-btn" onclick="loadHistory()">Refresh</button>
+            </h2>
+            <div style="overflow-x: auto;">
+                <table class="table" id="history-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Patient</th>
+                            <th>Channel</th>
+                            <th>Type</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-body">
+                        <tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>
+                Scheduled Notifications
+                <button class="btn btn-outline refresh-btn" onclick="loadSchedules()">Refresh</button>
+            </h2>
+            <div style="overflow-x: auto;">
+                <table class="table" id="schedules-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Patient</th>
+                            <th>Type</th>
+                            <th>Channel</th>
+                            <th>Cron</th>
+                            <th>Status</th>
+                            <th>Last Triggered</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="schedules-body">
+                        <tr><td colspan="8" style="text-align:center; color: var(--text-muted);">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('stat-total').textContent = data.total_sent;
+                document.getElementById('stat-delivered').textContent = data.total_delivered;
+                document.getElementById('stat-failed').textContent = data.total_failed;
+                document.getElementById('stat-rate').textContent = data.delivery_rate + '%';
+                document.getElementById('stat-schedules').textContent = data.active_schedules;
+            } catch (e) {
+                console.error('Failed to load stats:', e);
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const res = await fetch('/api/history?limit=20');
+                const data = await res.json();
+                const tbody = document.getElementById('history-body');
+                if (data.history.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No notifications yet</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.history.map(h => {
+                    const statusClass = h.status === 'delivered' ? 'badge-success' :
+                                       h.status === 'failed' ? 'badge-danger' :
+                                       h.status === 'sent' ? 'badge-info' : 'badge-pending';
+                    const channelClass = h.channel === 'whatsapp' ? 'badge-success' : 'badge-info';
+                    const time = h.created_at ? new Date(h.created_at).toLocaleString() : '-';
+                    const msg = (h.message || '').substring(0, 60) + (h.message && h.message.length > 60 ? '...' : '');
+                    return `<tr>
+                        <td>${time}</td>
+                        <td>${h.patient_id}</td>
+                        <td><span class="badge ${channelClass}">${h.channel}</span></td>
+                        <td>${h.type}</td>
+                        <td title="${h.message || ''}">${msg}</td>
+                        <td><span class="badge ${statusClass}">${h.status}</span></td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error('Failed to load history:', e);
+            }
+        }
+
+        async function loadSchedules() {
+            try {
+                const res = await fetch('/api/schedules');
+                const data = await res.json();
+                const tbody = document.getElementById('schedules-body');
+                if (data.schedules.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color: var(--text-muted);">No schedules yet</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = data.schedules.map(s => {
+                    const statusBadge = s.enabled ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Disabled</span>';
+                    const last = s.last_triggered ? new Date(s.last_triggered).toLocaleString() : 'Never';
+                    return `<tr>
+                        <td><code>${s.id.substring(0, 8)}...</code></td>
+                        <td>${s.patient_id}</td>
+                        <td>${s.type}</td>
+                        <td><span class="badge badge-info">${s.channel}</span></td>
+                        <td><code>${s.schedule?.cron || '-'}</code></td>
+                        <td>${statusBadge}</td>
+                        <td>${last}</td>
+                        <td>${s.enabled ? `<button class="btn btn-outline" style="padding:4px 10px; font-size:0.75rem;" onclick="cancelSchedule('${s.id}')">Cancel</button>` : '-'}</td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                console.error('Failed to load schedules:', e);
+            }
+        }
+
+        async function cancelSchedule(id) {
+            if (!confirm('Cancel this schedule?')) return;
+            try {
+                await fetch(`/api/schedules/${id}`, { method: 'DELETE' });
+                loadSchedules();
+                loadStats();
+            } catch (e) {
+                alert('Failed to cancel schedule');
+            }
+        }
+
+        document.getElementById('send-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const result = document.getElementById('send-result');
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const res = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        patient_id: document.getElementById('send-patient-id').value,
+                        phone: document.getElementById('send-phone').value,
+                        message: document.getElementById('send-message').value,
+                        channel: document.getElementById('send-channel').value,
+                        msg_type: document.getElementById('send-type').value,
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    result.className = 'success';
+                    result.textContent = `Sent! ID: ${data.notification_id} | SID: ${data.message_sid || 'N/A'}`;
+                    e.target.reset();
+                    loadHistory();
+                    loadStats();
+                } else {
+                    result.className = 'error';
+                    result.textContent = `Failed: ${data.error || 'Unknown error'}`;
+                }
+            } catch (e) {
+                result.className = 'error';
+                result.textContent = `Error: ${e.message}`;
+            }
+            btn.disabled = false;
+            btn.textContent = 'Send Notification';
+        });
+
+        loadStats();
+        loadHistory();
+        loadSchedules();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Portal - Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="header-content">
+            <div class="header-left">
+                <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+                    <circle cx="24" cy="24" r="24" fill="#3ECF8E"/>
+                    <path d="M24 14v20M14 24h20" stroke="white" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+                <div>
+                    <h1>Welcome, {{ patient.name }}</h1>
+                    <p class="subtitle">Discharged {{ patient.discharge_date }}</p>
+                </div>
+            </div>
+            <button onclick="window.location.href='/'" class="btn btn-text">Sign Out</button>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <!-- Quick Actions -->
+        <section class="quick-actions">
+            <button onclick="showSection('medications')" class="action-card">
+                <span class="action-icon">💊</span>
+                <span class="action-label">Medications</span>
+                <span class="action-count">{{ patient.medications|length if patient.medications else 0 }}</span>
+            </button>
+            <button onclick="showSection('vitals')" class="action-card">
+                <span class="action-icon">❤️</span>
+                <span class="action-label">Log Vitals</span>
+            </button>
+            <button onclick="showSection('symptoms')" class="action-card">
+                <span class="action-icon">📋</span>
+                <span class="action-label">Symptoms</span>
+            </button>
+            <button onclick="showSection('appointments')" class="action-card">
+                <span class="action-icon">📅</span>
+                <span class="action-label">Appointments</span>
+            </button>
+        </section>
+
+        <!-- Warning Signs Banner -->
+        {% if patient.discharge_plan and patient.discharge_plan.warning_signs %}
+        <section class="warning-banner">
+            <h2>⚠️ When to Call Your Doctor</h2>
+            <ul>
+                {% for sign in patient.discharge_plan.warning_signs[:5] %}
+                <li>{{ sign }}</li>
+                {% endfor %}
+            </ul>
+            <p class="emergency-text">For emergencies, call <strong>911</strong> immediately.</p>
+        </section>
+        {% endif %}
+
+        <!-- Medications Section -->
+        <section id="medications" class="section">
+            <h2>💊 Your Medications</h2>
+            {% if patient.medications %}
+            <div class="medication-list">
+                {% for med in patient.medications %}
+                <div class="medication-card">
+                    <div class="med-header">
+                        <h3>{{ med.name }}</h3>
+                        <span class="med-dose">{{ med.dose }}</span>
+                    </div>
+                    <p class="med-frequency">{{ med.frequency }}</p>
+                    {% if med.instructions %}
+                    <p class="med-instructions">{{ med.instructions }}</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-state">No medications listed. Contact your care team if this seems wrong.</p>
+            {% endif %}
+        </section>
+
+        <!-- Log Vitals Section -->
+        <section id="vitals" class="section hidden">
+            <h2>❤️ Log Your Vitals</h2>
+            <form id="vitalsForm" class="vitals-form">
+                <div class="form-group">
+                    <label for="heartRate">Heart Rate (bpm)</label>
+                    <input type="number" id="heartRate" name="heart_rate" placeholder="72" min="40" max="200">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="systolic">Blood Pressure (Systolic)</label>
+                        <input type="number" id="systolic" name="systolic" placeholder="120" min="70" max="250">
+                    </div>
+                    <div class="form-group">
+                        <label for="diastolic">Blood Pressure (Diastolic)</label>
+                        <input type="number" id="diastolic" name="diastolic" placeholder="80" min="40" max="150">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="spo2">Oxygen Saturation (%)</label>
+                    <input type="number" id="spo2" name="spo2" placeholder="98" min="70" max="100">
+                </div>
+                <div class="form-group">
+                    <label for="temperature">Temperature (°F)</label>
+                    <input type="number" id="temperature" name="temperature" placeholder="98.6" step="0.1" min="95" max="105">
+                </div>
+                <div class="form-group">
+                    <label for="weight">Weight (lbs)</label>
+                    <input type="number" id="weight" name="weight" placeholder="170" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="vitalsNotes">Notes (optional)</label>
+                    <textarea id="vitalsNotes" name="notes" rows="2" placeholder="How are you feeling?"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Save Vitals</button>
+            </form>
+
+            <!-- Recent Vitals -->
+            <div id="vitalsHistory" class="vitals-history"></div>
+        </section>
+
+        <!-- Symptom Check-in Section -->
+        <section id="symptoms" class="section hidden">
+            <h2>📋 How Are You Feeling?</h2>
+            <form id="symptomForm" class="symptom-form">
+                <div class="symptom-grid">
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="shortness_of_breath">
+                        <span>Shortness of breath</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="chest_pain">
+                        <span>Chest pain</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="dizziness">
+                        <span>Dizziness</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="swelling">
+                        <span>Swelling in legs/ankles</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="fatigue">
+                        <span>Fatigue</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="nausea">
+                        <span>Nausea</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="fever">
+                        <span>Fever</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="headache">
+                        <span>Headache</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="confusion">
+                        <span>Confusion</span>
+                    </label>
+                    <label class="symptom-checkbox">
+                        <input type="checkbox" name="symptoms" value="pain">
+                        <span>Pain</span>
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label for="severity">Overall Severity (1-10)</label>
+                    <div class="severity-slider">
+                        <span>1</span>
+                        <input type="range" id="severity" name="severity" min="1" max="10" value="5" oninput="document.getElementById('severityValue').textContent = this.value">
+                        <span>10</span>
+                    </div>
+                    <p class="severity-label">Severity: <strong id="severityValue">5</strong>/10</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="symptomNotes">Additional Notes</label>
+                    <textarea id="symptomNotes" name="notes" rows="3" placeholder="Describe how you're feeling..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full">Submit Check-in</button>
+            </form>
+        </section>
+
+        <!-- Appointments Section -->
+        <section id="appointments" class="section hidden">
+            <h2>📅 Upcoming Appointments</h2>
+            {% if patient.discharge_plan and patient.discharge_plan.follow_up_appointments %}
+            <div class="appointment-list">
+                {% for appt in patient.discharge_plan.follow_up_appointments %}
+                <div class="appointment-card">
+                    <div class="appt-header">
+                        <h3>{{ appt.specialist }}</h3>
+                        <span class="appt-priority {{ appt.priority }}">{{ appt.priority }}</span>
+                    </div>
+                    <p class="appt-condition">For: {{ appt.condition }}</p>
+                    <p class="appt-date">In {{ appt.days_from_discharge }} days</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-state">No appointments scheduled yet. Your care team will contact you.</p>
+            {% endif %}
+        </section>
+
+        <!-- Care Team Section -->
+        <section id="careteam" class="section hidden">
+            <h2>👥 Your Care Team</h2>
+            {% if patient.care_team and patient.care_team.members %}
+            <div class="care-team-list">
+                {% for member in patient.care_team.members %}
+                <div class="care-team-card">
+                    <h3>{{ member.name }}</h3>
+                    <p class="member-title">{{ member.title }}</p>
+                    <ul class="member-responsibilities">
+                        {% for resp in member.responsibilities %}
+                        <li>{{ resp }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="empty-state">Your care team will be assigned soon.</p>
+            {% endif %}
+
+            <div class="emergency-contact">
+                <h3>Emergency Contact</h3>
+                <p>For life-threatening emergencies: <strong>911</strong></p>
+                <p>For urgent concerns: <strong>1-800-XXX-XXXX</strong></p>
+            </div>
+        </section>
+
+        <!-- Home Care Instructions -->
+        {% if patient.discharge_plan and patient.discharge_plan.home_care_instructions %}
+        <section id="homecare" class="section">
+            <h2>🏠 Home Care Instructions</h2>
+            <ul class="care-instructions">
+                {% for instruction in patient.discharge_plan.home_care_instructions %}
+                <li>{{ instruction }}</li>
+                {% endfor %}
+            </ul>
+        </section>
+        {% endif %}
+    </main>
+
+    <nav class="bottom-nav">
+        <button onclick="showSection('medications')" class="nav-item active" data-section="medications">
+            <span class="nav-icon">💊</span>
+            <span>Meds</span>
+        </button>
+        <button onclick="showSection('vitals')" class="nav-item" data-section="vitals">
+            <span class="nav-icon">❤️</span>
+            <span>Vitals</span>
+        </button>
+        <button onclick="showSection('symptoms')" class="nav-item" data-section="symptoms">
+            <span class="nav-icon">📋</span>
+            <span>Symptoms</span>
+        </button>
+        <button onclick="showSection('appointments')" class="nav-item" data-section="appointments">
+            <span class="nav-icon">📅</span>
+            <span>Appts</span>
+        </button>
+        <button onclick="showSection('careteam')" class="nav-item" data-section="careteam">
+            <span class="nav-icon">👥</span>
+            <span>Team</span>
+        </button>
+    </nav>
+
+    <script>
+        const sessionId = new URLSearchParams(window.location.search).get('session_id');
+        const patientId = "{{ patient.patient_id }}";
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.remove('hidden');
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            const navItem = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
+            if (navItem) navItem.classList.add('active');
+        }
+
+        // Vitals form submission
+        document.getElementById('vitalsForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const vitals = {};
+
+            for (const [key, value] of formData) {
+                if (value && key !== 'notes') {
+                    vitals[key] = parseFloat(value);
+                }
+            }
+
+            if (Object.keys(vitals).length === 0) {
+                alert('Please enter at least one vital sign');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/vitals', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        patient_id: patientId,
+                        metric: 'vitals_checkin',
+                        value: 1,
+                        unit: 'checkin',
+                        notes: JSON.stringify(vitals)
+                    })
+                });
+
+                if (res.ok) {
+                    alert('Vitals saved successfully!');
+                    e.target.reset();
+                    loadVitalsHistory();
+                }
+            } catch (err) {
+                alert('Error saving vitals. Please try again.');
+            }
+        });
+
+        // Symptom form submission
+        document.getElementById('symptomForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const symptoms = formData.getAll('symptoms');
+
+            try {
+                const res = await fetch('/api/symptoms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        patient_id: patientId,
+                        symptoms: symptoms,
+                        severity: parseInt(formData.get('severity')),
+                        notes: formData.get('notes')
+                    })
+                });
+
+                if (res.ok) {
+                    alert('Symptom check-in saved!');
+                    e.target.reset();
+                    document.getElementById('severityValue').textContent = '5';
+                }
+            } catch (err) {
+                alert('Error saving symptoms. Please try again.');
+            }
+        });
+
+        // Load vitals history
+        async function loadVitalsHistory() {
+            try {
+                const res = await fetch(`/api/vitals-history/${patientId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const container = document.getElementById('vitalsHistory');
+                    if (data.vitals && data.vitals.length > 0) {
+                        const recent = data.vitals.slice(-5).reverse();
+                        container.innerHTML = '<h3>Recent Readings</h3>' +
+                            recent.map(v => `<div class="vital-reading"><span>${new Date(v.timestamp).toLocaleDateString()}</span><pre>${v.notes || JSON.stringify(v)}</pre></div>`).join('');
+                    }
+                }
+            } catch (err) {}
+        }
+
+        // Initial load
+        loadVitalsHistory();
+    </script>
+</body>
+</html>

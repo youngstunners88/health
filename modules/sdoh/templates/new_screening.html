@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New SDOH Screening</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .domain-section { background: var(--color-surface); border-radius: var(--radius-md); padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .domain-section h3 { font-size: 16px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; gap: 8px; }
+        .question-group { margin-bottom: 16px; }
+        .question-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 8px; }
+        .radio-group { display: flex; gap: 16px; }
+        .radio-group label { display: flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer; }
+        .radio-group input[type="radio"] { accent-color: var(--color-primary); }
+        .scale-group { display: flex; gap: 8px; align-items: center; }
+        .scale-group label { display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 400; cursor: pointer; font-size: 12px; }
+        .scale-group input[type="radio"] { accent-color: var(--color-primary); }
+        .scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
+        .risk-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 8px; }
+        .risk-indicator.high { background: var(--color-error); }
+        .risk-indicator.medium { background: var(--color-warning); }
+        .risk-indicator.low { background: var(--color-success); }
+        .notes-input { width: 100%; padding: 8px 12px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font-size: 13px; margin-top: 8px; }
+        .notes-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(62,207,142,0.15); }
+        .summary-bar { position: sticky; bottom: 0; background: var(--color-surface); padding: 16px; border-radius: var(--radius-md); box-shadow: 0 -2px 10px rgba(0,0,0,0.1); margin-top: 24px; display: flex; justify-content: space-between; align-items: center; }
+        @media (max-width: 768px) {
+            .radio-group { flex-wrap: wrap; }
+            .scale-group { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div>
+                    <h1>SDOH</h1>
+                    <p>Social Determinants of Health</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">📊 Dashboard</a>
+                <a href="/screening/new" class="active">➕ New Screening</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>New SDOH Screening</h2>
+            </div>
+
+            <form id="screeningForm">
+                <div class="detail-section">
+                    <h3 style="margin-bottom:16px;">Patient Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="patient_id">Patient ID</label>
+                            <input type="text" id="patient_id" name="patient_id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient_name">Patient Name</label>
+                            <input type="text" id="patient_name" name="patient_name" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="screening_date">Screening Date</label>
+                            <input type="date" id="screening_date" name="screening_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="screened_by">Screened By</label>
+                            <input type="text" id="screened_by" name="screened_by" placeholder="Staff name or ID">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Domain 1: Housing -->
+                <div class="domain-section">
+                    <h3>🏠 Housing <span class="risk-indicator low" id="housingRisk"></span></h3>
+                    <div class="question-group">
+                        <label>1. Have you had trouble paying rent or mortgage in the past 12 months?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="housing_rent_trouble" value="yes" required> Yes</label>
+                            <label><input type="radio" name="housing_rent_trouble" value="no"> No</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>2. Are you currently experiencing unstable housing or homelessness?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="housing_unstable" value="yes" required> Yes</label>
+                            <label><input type="radio" name="housing_unstable" value="no"> No</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>3. How would you rate your current housing quality?</label>
+                        <div class="scale-group">
+                            <label><input type="radio" name="housing_quality" value="1" required> 1<br>Very Poor</label>
+                            <label><input type="radio" name="housing_quality" value="2"> 2</label>
+                            <label><input type="radio" name="housing_quality" value="3"> 3</label>
+                            <label><input type="radio" name="housing_quality" value="4"> 4</label>
+                            <label><input type="radio" name="housing_quality" value="5"> 5<br>Excellent</label>
+                        </div>
+                    </div>
+                    <input type="text" class="notes-input" name="housing_notes" placeholder="Additional notes about housing situation...">
+                </div>
+
+                <!-- Domain 2: Food Security -->
+                <div class="domain-section">
+                    <h3>🍎 Food Security <span class="risk-indicator low" id="foodRisk"></span></h3>
+                    <div class="question-group">
+                        <label>1. In the past 12 months, did you worry that food would run out before you got money to buy more?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="food_worry" value="yes" required> Often true</label>
+                            <label><input type="radio" name="food_worry" value="sometimes"> Sometimes true</label>
+                            <label><input type="radio" name="food_worry" value="no"> Never true</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>2. In the past 12 months, did the food you bought run out and you didn't have money to get more?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="food_run_out" value="yes" required> Often true</label>
+                            <label><input type="radio" name="food_run_out" value="sometimes"> Sometimes true</label>
+                            <label><input type="radio" name="food_run_out" value="no"> Never true</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>3. Do you have reliable access to a kitchen for preparing meals?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="food_kitchen" value="yes" required> Yes</label>
+                            <label><input type="radio" name="food_kitchen" value="no"> No</label>
+                        </div>
+                    </div>
+                    <input type="text" class="notes-input" name="food_notes" placeholder="Additional notes about food security...">
+                </div>
+
+                <!-- Domain 3: Transportation -->
+                <div class="domain-section">
+                    <h3>🚗 Transportation <span class="risk-indicator low" id="transportRisk"></span></h3>
+                    <div class="question-group">
+                        <label>1. Has lack of transportation kept you from medical appointments, meetings, work, or getting things needed for daily living?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="transport_barrier" value="yes" required> Yes</label>
+                            <label><input type="radio" name="transport_barrier" value="no"> No</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>2. How many days in the past month did transportation issues prevent you from attending a healthcare appointment?</label>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <input type="number" name="transport_missed_days" min="0" max="31" value="0" style="width:100px;">
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>3. Do you have access to a reliable vehicle or public transportation?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="transport_access" value="yes" required> Yes</label>
+                            <label><input type="radio" name="transport_access" value="limited"> Limited</label>
+                            <label><input type="radio" name="transport_access" value="no"> No</label>
+                        </div>
+                    </div>
+                    <input type="text" class="notes-input" name="transport_notes" placeholder="Additional notes about transportation...">
+                </div>
+
+                <!-- Domain 4: Utilities -->
+                <div class="domain-section">
+                    <h3>💡 Utilities <span class="risk-indicator low" id="utilitiesRisk"></span></h3>
+                    <div class="question-group">
+                        <label>1. In the past 12 months, has the electric, gas, oil, or water company threatened to shut off services?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="utilities_threat" value="yes" required> Yes</label>
+                            <label><input type="radio" name="utilities_threat" value="no"> No</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>2. Have you had to choose between paying for utilities and other necessities (food, medicine, rent)?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="utilities_tradeoff" value="yes" required> Yes</label>
+                            <label><input type="radio" name="utilities_tradeoff" value="no"> No</label>
+                        </div>
+                    </div>
+                    <input type="text" class="notes-input" name="utilities_notes" placeholder="Additional notes about utilities...">
+                </div>
+
+                <!-- Domain 5: Safety -->
+                <div class="domain-section">
+                    <h3>🛡️ Safety <span class="risk-indicator low" id="safetyRisk"></span></h3>
+                    <div class="question-group">
+                        <label>1. Do you feel safe in your current living situation?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="safety_home" value="yes" required> Yes</label>
+                            <label><input type="radio" name="safety_home" value="no"> No</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>2. In the past 12 months, have you been physically hurt or threatened by anyone?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="safety_hurt" value="yes" required> Yes</label>
+                            <label><input type="radio" name="safety_hurt" value="no"> No</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>3. How would you rate the safety of your neighborhood?</label>
+                        <div class="scale-group">
+                            <label><input type="radio" name="safety_neighborhood" value="1" required> 1<br>Very Unsafe</label>
+                            <label><input type="radio" name="safety_neighborhood" value="2"> 2</label>
+                            <label><input type="radio" name="safety_neighborhood" value="3"> 3</label>
+                            <label><input type="radio" name="safety_neighborhood" value="4"> 4</label>
+                            <label><input type="radio" name="safety_neighborhood" value="5"> 5<br>Very Safe</label>
+                        </div>
+                    </div>
+                    <input type="text" class="notes-input" name="safety_notes" placeholder="Additional notes about safety...">
+                </div>
+
+                <!-- Domain 6: Social Connection -->
+                <div class="domain-section">
+                    <h3>👥 Social Connection <span class="risk-indicator low" id="socialRisk"></span></h3>
+                    <div class="question-group">
+                        <label>1. How often do you feel lonely or isolated?</label>
+                        <div class="scale-group">
+                            <label><input type="radio" name="social_lonely" value="1" required> 1<br>Never</label>
+                            <label><input type="radio" name="social_lonely" value="2"> 2</label>
+                            <label><input type="radio" name="social_lonely" value="3"> 3</label>
+                            <label><input type="radio" name="social_lonely" value="4"> 4</label>
+                            <label><input type="radio" name="social_lonely" value="5"> 5<br>Always</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>2. If you needed help, do you have someone you can rely on?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="social_support" value="yes" required> Yes</label>
+                            <label><input type="radio" name="social_support" value="no"> No</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>3. How often do you participate in social or community activities?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="social_activities" value="regularly" required> Regularly</label>
+                            <label><input type="radio" name="social_activities" value="occasionally"> Occasionally</label>
+                            <label><input type="radio" name="social_activities" value="rarely"> Rarely</label>
+                            <label><input type="radio" name="social_activities" value="never"> Never</label>
+                        </div>
+                    </div>
+                    <input type="text" class="notes-input" name="social_notes" placeholder="Additional notes about social connection...">
+                </div>
+
+                <!-- Domain 7: Financial -->
+                <div class="domain-section">
+                    <h3>💰 Financial Resources <span class="risk-indicator low" id="financialRisk"></span></h3>
+                    <div class="question-group">
+                        <label>1. Are you currently employed?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="financial_employed" value="full_time" required> Full-time</label>
+                            <label><input type="radio" name="financial_employed" value="part_time"> Part-time</label>
+                            <label><input type="radio" name="financial_employed" value="unemployed"> Unemployed</label>
+                            <label><input type="radio" name="financial_employed" value="retired"> Retired</label>
+                            <label><input type="radio" name="financial_employed" value="disabled"> Disabled</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>2. How often do you have difficulty covering monthly expenses?</label>
+                        <div class="scale-group">
+                            <label><input type="radio" name="financial_difficulty" value="1" required> 1<br>Never</label>
+                            <label><input type="radio" name="financial_difficulty" value="2"> 2</label>
+                            <label><input type="radio" name="financial_difficulty" value="3"> 3</label>
+                            <label><input type="radio" name="financial_difficulty" value="4"> 4</label>
+                            <label><input type="radio" name="financial_difficulty" value="5"> 5<br>Always</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>3. Are you currently enrolled in any financial assistance programs?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="financial_assistance" value="yes" required> Yes</label>
+                            <label><input type="radio" name="financial_assistance" value="no"> No</label>
+                            <label><input type="radio" name="financial_assistance" value="unsure"> Not Sure</label>
+                        </div>
+                    </div>
+                    <input type="text" class="notes-input" name="financial_notes" placeholder="Additional notes about financial situation...">
+                </div>
+
+                <!-- Domain 8: Health Literacy -->
+                <div class="domain-section">
+                    <h3>📚 Health Literacy <span class="risk-indicator low" id="healthLitRisk"></span></h3>
+                    <div class="question-group">
+                        <label>1. How confident are you in filling out medical forms by yourself?</label>
+                        <div class="scale-group">
+                            <label><input type="radio" name="healthlit_forms" value="1" required> 1<br>Not at all</label>
+                            <label><input type="radio" name="healthlit_forms" value="2"> 2</label>
+                            <label><input type="radio" name="healthlit_forms" value="3"> 3</label>
+                            <label><input type="radio" name="healthlit_forms" value="4"> 4</label>
+                            <label><input type="radio" name="healthlit_forms" value="5"> 5<br>Very confident</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>2. How often do you have difficulty understanding medical instructions or health information?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="healthlit_understand" value="never" required> Never</label>
+                            <label><input type="radio" name="healthlit_understand" value="rarely"> Rarely</label>
+                            <label><input type="radio" name="healthlit_understand" value="sometimes"> Sometimes</label>
+                            <label><input type="radio" name="healthlit_understand" value="often"> Often</label>
+                        </div>
+                    </div>
+                    <div class="question-group">
+                        <label>3. Do you have access to a primary care provider you see regularly?</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="healthlit_pcp" value="yes" required> Yes</label>
+                            <label><input type="radio" name="healthlit_pcp" value="no"> No</label>
+                            <label><input type="radio" name="healthlit_pcp" value="unsure"> Not Sure</label>
+                        </div>
+                    </div>
+                    <input type="text" class="notes-input" name="healthlit_notes" placeholder="Additional notes about health literacy...">
+                </div>
+
+                <div class="summary-bar">
+                    <div>
+                        <span style="font-size:14px;color:var(--color-text-secondary);">Screening covers all 8 SDOH domains</span>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Screening & Generate Referrals</button>
+                </div>
+            </form>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('screeningForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const data = {
+                patient_id: form.patient_id.value,
+                patient_name: form.patient_name.value,
+                screening_date: form.screening_date.value,
+                screened_by: form.screened_by.value,
+                responses: {}
+            };
+
+            for (const [key, value] of formData.entries()) {
+                if (['patient_id', 'patient_name', 'screening_date', 'screened_by'].includes(key)) continue;
+                if (key.endsWith('_notes')) continue;
+                data.responses[key] = value;
+            }
+
+            data.notes = {
+                housing: form.housing_notes.value,
+                food: form.food_notes.value,
+                transport: form.transport_notes.value,
+                utilities: form.utilities_notes.value,
+                safety: form.safety_notes.value,
+                social: form.social_notes.value,
+                financial: form.financial_notes.value,
+                healthlit: form.healthlit_notes.value
+            };
+
+            try {
+                const res = await fetch('/api/screenings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    window.location.href = `/screening/${result.screening_id}`;
+                } else {
+                    const err = await res.json();
+                    alert('Error: ' + (err.detail || 'Failed to submit screening'));
+                }
+            } catch (err) {
+                alert('Error submitting screening');
+            }
+        });
+    </script>
+</body>
+</html>

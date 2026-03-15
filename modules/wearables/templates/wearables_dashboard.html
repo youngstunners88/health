@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wearables Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .device-status { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .device-status.online { background: var(--color-success); box-shadow: 0 0 6px var(--color-success); }
+        .device-status.offline { background: var(--color-text-tertiary); }
+        .device-status.error { background: var(--color-error); box-shadow: 0 0 6px var(--color-error); }
+        .device-card { background: var(--color-surface); border-radius: var(--radius-md); padding: var(--spacing-md); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: space-between; }
+        .device-card .device-info { flex: 1; }
+        .device-card .device-name { font-weight: 600; font-size: 14px; }
+        .device-card .device-meta { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+        .device-card .device-type { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--color-surface-hover); margin-top: 4px; display: inline-block; }
+        .device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-md); margin-bottom: var(--spacing-lg); }
+        .chart-placeholder { height: 250px; background: var(--color-surface-hover); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; color: var(--color-text-tertiary); font-size: 14px; border: 2px dashed var(--color-border); }
+        .register-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--spacing-md); align-items: end; }
+        .badge-online { background: #C6F6D5; color: #276749; }
+        .badge-offline { background: #E2E8F0; color: #718096; }
+        .badge-error { background: #FED7D7; color: #C53030; }
+        .badge-syncing { background: #BEE3F8; color: #2A4365; }
+        @media (max-width: 1024px) { .device-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .device-grid { grid-template-columns: 1fr; } .register-form { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+                    <circle cx="24" cy="24" r="24" fill="#3ECF8E"/>
+                    <path d="M14 24h4l3-8 6 16 3-8h4" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div>
+                    <h1>Wearables</h1>
+                    <p>Device Monitoring</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="active"><span>📊</span> Dashboard</a>
+                <a href="/devices"><span>⌚</span> Devices</a>
+                <a href="/alerts"><span>🔔</span> Alerts</a>
+            </nav>
+            <div class="sidebar-stats">
+                <div class="stat-item">
+                    <span class="label">Active Devices</span>
+                    <span class="value">{{ stats.active_devices }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="label">Offline</span>
+                    <span class="value {% if stats.offline_devices > 0 %}critical{% endif %}">{{ stats.offline_devices }}</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Wearables Dashboard</h2>
+                <button onclick="syncAllDevices()" class="btn btn-outline">↻ Sync All</button>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-label">Total Devices</div>
+                    <div class="card-value">{{ stats.total_devices }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Active Devices</div>
+                    <div class="card-value success">{{ stats.active_devices }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Offline Devices</div>
+                    <div class="card-value critical">{{ stats.offline_devices }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Total Readings</div>
+                    <div class="card-value">{{ '{:,}'.format(stats.total_readings) }}</div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Device List</h3>
+                <div class="device-grid">
+                    {% for device in devices %}
+                    <div class="device-card">
+                        <div class="device-info">
+                            <div class="device-name">
+                                <span class="device-status {% if device.status == 'online' %}online{% elif device.status == 'error' %}error{% else %}offline{% endif %}"></span>
+                                {{ device.device_name }}
+                            </div>
+                            <div class="device-meta">
+                                Patient: {{ device.patient_name }} · Last sync: {{ device.last_sync[:16].replace('T', ' ') if device.last_sync else 'Never' }}
+                            </div>
+                            <span class="device-type">{{ device.device_type }}</span>
+                        </div>
+                        <a href="/device/{{ device.device_id }}" class="action-link">View</a>
+                    </div>
+                    {% endfor %}
+                    {% if not devices %}
+                    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--color-text-tertiary);">
+                        <p>No devices registered yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Recent Readings</h3>
+                <div class="chart-placeholder">
+                    <div style="text-align:center;">
+                        <p style="font-size:24px;margin-bottom:8px;">📈</p>
+                        <p>Readings chart will render here</p>
+                        <p style="font-size:12px;margin-top:4px;">Connect a charting library (Chart.js, D3, etc.) to visualize vitals over time</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-section">
+                <h3>Register New Device</h3>
+                <form id="registerDeviceForm">
+                    <div class="register-form">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="patient_id">Patient ID</label>
+                            <input type="text" id="patient_id" name="patient_id" required placeholder="e.g., PAT-001">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label for="device_type">Device Type</label>
+                            <select id="device_type" name="device_type" required>
+                                <option value="">Select device type...</option>
+                                <option value="heart_rate_monitor">Heart Rate Monitor</option>
+                                <option value="blood_pressure">Blood Pressure Monitor</option>
+                                <option value="glucose_meter">Glucose Meter</option>
+                                <option value="pulse_oximeter">Pulse Oximeter</option>
+                                <option value="smartwatch">Smartwatch</option>
+                                <option value="fitness_tracker">Fitness Tracker</option>
+                                <option value="ecg_patch">ECG Patch</option>
+                                <option value="temperature_sensor">Temperature Sensor</option>
+                                <option value="weight_scale">Smart Weight Scale</option>
+                                <option value="sleep_tracker">Sleep Tracker</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="height:42px;">Register Device</button>
+                    </div>
+                    <div class="form-row" style="margin-top:var(--spacing-md);">
+                        <div class="form-group">
+                            <label for="device_name">Device Name (optional)</label>
+                            <input type="text" id="device_name" name="device_name" placeholder="e.g., John's Apple Watch">
+                        </div>
+                        <div class="form-group">
+                            <label for="device_serial">Serial Number / MAC (optional)</label>
+                            <input type="text" id="device_serial" name="device_serial" placeholder="e.g., AA:BB:CC:DD:EE:FF">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('registerDeviceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                patient_id: form.patient_id.value,
+                device_type: form.device_type.value,
+                device_name: form.device_name.value,
+                device_serial: form.device_serial.value,
+            };
+            try {
+                const res = await fetch('/api/devices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    window.location.href = `/device/${result.device_id}`;
+                }
+            } catch (err) {
+                alert('Error registering device');
+            }
+        });
+
+        async function syncAllDevices() {
+            try {
+                const res = await fetch('/api/devices/sync-all', { method: 'POST' });
+                if (res.ok) location.reload();
+            } catch (e) { alert('Error syncing devices'); }
+        }
+    </script>
+</body>
+</html>

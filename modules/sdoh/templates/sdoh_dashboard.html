@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SDOH Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .domain-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .domain-card { background: var(--color-surface); border-radius: var(--radius-md); padding: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+        .domain-card .domain-icon { font-size: 24px; margin-bottom: 4px; }
+        .domain-card .domain-name { font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .domain-card .domain-count { font-size: 24px; font-weight: 700; margin-top: 4px; }
+        .domain-card .domain-risk { font-size: 11px; margin-top: 4px; font-weight: 600; }
+        .risk-high { color: var(--color-error); }
+        .risk-medium { color: var(--color-warning); }
+        .risk-low { color: var(--color-success); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .referral-actions { display: flex; gap: 4px; }
+        .badge-completed { background: #C6F6D5; color: #276749; }
+        .badge-pending { background: #FEFCBF; color: #975A16; }
+        .badge-rejected { background: #FED7D7; color: #C53030; }
+        .badge-high { background: #FED7D7; color: #C53030; }
+        .badge-medium { background: #FEFCBF; color: #975A16; }
+        .badge-low { background: #C6F6D5; color: #276749; }
+        @media (max-width: 768px) {
+            .summary-cards { grid-template-columns: repeat(2, 1fr); }
+            .domain-grid { grid-template-columns: repeat(2, 1fr); }
+            .two-col { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div>
+                    <h1>SDOH</h1>
+                    <p>Social Determinants of Health</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="active">📊 Dashboard</a>
+                <a href="/screening/new">➕ New Screening</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>SDOH Dashboard</h2>
+                <a href="/screening/new" class="btn btn-primary">+ New Screening</a>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-label">Total Screenings</div>
+                    <div class="card-value">{{ stats.total_screenings }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">High Risk</div>
+                    <div class="card-value" style="color:var(--color-error)">{{ stats.high_risk_count }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Referrals Made</div>
+                    <div class="card-value">{{ stats.total_referrals }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Referral Completion Rate</div>
+                    <div class="card-value" style="color:var(--color-success)">{{ "%.1f"|format(stats.referral_completion_rate) }}%</div>
+                </div>
+            </div>
+
+            <div class="page-header" style="margin-top:8px;">
+                <h3 style="font-size:18px;font-weight:600;">Domain Risk Breakdown</h3>
+            </div>
+            <div class="domain-grid">
+                {% for domain in domain_breakdown %}
+                <div class="domain-card">
+                    <div class="domain-icon">{{ domain.icon }}</div>
+                    <div class="domain-name">{{ domain.name }}</div>
+                    <div class="domain-count">{{ domain.at_risk_count }}/{{ domain.total }}</div>
+                    <div class="domain-risk {% if domain.risk_level == 'high' %}risk-high{% elif domain.risk_level == 'medium' %}risk-medium{% else %}risk-low{% endif %}">
+                        {{ domain.risk_level | upper }} RISK
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="two-col" style="margin-top:32px;">
+                <div>
+                    <div class="page-header" style="margin-bottom:12px;">
+                        <h3 style="font-size:18px;font-weight:600;">Recent Screenings</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Screening ID</th>
+                                <th>Patient</th>
+                                <th>Risk Level</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for screening in recent_screenings %}
+                            <tr>
+                                <td><strong>{{ screening.screening_id }}</strong></td>
+                                <td>{{ screening.patient_name }}</td>
+                                <td><span class="badge badge-{{ screening.risk_level }}">{{ screening.risk_level }}</span></td>
+                                <td>{{ screening.screened_at[:10] }}</td>
+                                <td><a href="/screening/{{ screening.screening_id }}" class="action-link">View</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if not recent_screenings %}
+                    <div style="text-align:center;padding:40px;color:var(--color-text-tertiary);">
+                        <p>No screenings yet</p>
+                        <a href="/screening/new" class="btn btn-primary btn-sm" style="margin-top:8px;">Start First Screening</a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <div class="page-header" style="margin-bottom:12px;">
+                        <h3 style="font-size:18px;font-weight:600;">Pending Referrals</h3>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Referral ID</th>
+                                <th>Patient</th>
+                                <th>Domain</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for referral in pending_referrals %}
+                            <tr>
+                                <td><strong>{{ referral.referral_id }}</strong></td>
+                                <td>{{ referral.patient_name }}</td>
+                                <td>{{ referral.domain }}</td>
+                                <td><span class="badge badge-{{ referral.status }}">{{ referral.status }}</span></td>
+                                <td>
+                                    <div class="referral-actions">
+                                        <button onclick="completeReferral('{{ referral.referral_id }}')" class="btn btn-outline btn-sm" title="Mark Complete">✓</button>
+                                        <button onclick="rejectReferral('{{ referral.referral_id }}')" class="btn btn-outline btn-sm" title="Reject" style="color:var(--color-error);">✗</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if not pending_referrals %}
+                    <div style="text-align:center;padding:40px;color:var(--color-text-tertiary);">
+                        <p>No pending referrals</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function completeReferral(referralId) {
+            try {
+                const res = await fetch(`/api/referrals/${referralId}/complete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (res.ok) location.reload();
+                else alert('Error completing referral');
+            } catch (e) { alert('Error completing referral'); }
+        }
+
+        async function rejectReferral(referralId) {
+            if (!confirm('Reject this referral?')) return;
+            try {
+                const res = await fetch(`/api/referrals/${referralId}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (res.ok) location.reload();
+                else alert('Error rejecting referral');
+            } catch (e) { alert('Error rejecting referral'); }
+        }
+    </script>
+</body>
+</html>

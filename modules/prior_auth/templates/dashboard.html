@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prior Authorization Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div>
+                    <h1>Prior Auth</h1>
+                    <p>Authorization Management</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/" class="active">📊 Dashboard</a>
+                <a href="/new">➕ New Request</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Prior Authorization Dashboard</h2>
+                <a href="/new" class="btn btn-primary">+ New Request</a>
+            </div>
+
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-label">Total Requests</div>
+                    <div class="card-value">{{ stats.total }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Approved</div>
+                    <div class="card-value" style="color:var(--color-success)">{{ stats.approved }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Denied</div>
+                    <div class="card-value" style="color:var(--color-error)">{{ stats.denied }}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-label">Pending</div>
+                    <div class="card-value" style="color:var(--color-warning)">{{ stats.pending }}</div>
+                </div>
+            </div>
+
+            {% if pending %}
+            <div class="pending-section">
+                <h3>⏳ Pending / Expiring Soon</h3>
+                {% for p in pending %}
+                <div class="pending-item">
+                    <div>
+                        <strong>{{ p.auth_id }}</strong> — {{ p.patient_name }}
+                        <span style="color:var(--color-text-secondary);margin-left:8px;">{{ p.procedure }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        {% if p.get('is_expiring_soon') %}
+                        <span class="badge badge-expiring">Expiring: {{ p.get('hours_until_deadline', '?') }}h</span>
+                        {% else %}
+                        <span style="font-size:13px;color:var(--color-text-secondary);">{{ p.get('hours_until_deadline', '?') }}h remaining</span>
+                        {% endif %}
+                        <a href="/auth/{{ p.auth_id }}" class="action-link">View</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Auth ID</th>
+                        <th>Patient</th>
+                        <th>Payer</th>
+                        <th>Procedure</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Decision By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for auth in auths %}
+                    <tr>
+                        <td><strong>{{ auth.auth_id }}</strong></td>
+                        <td>{{ auth.patient_name }}</td>
+                        <td>{{ auth.payer_name }}</td>
+                        <td>{{ auth.procedure }}</td>
+                        <td><span class="badge badge-{{ auth.status }}">{{ auth.status.replace('_', ' ') }}</span></td>
+                        <td>{{ auth.submitted_at[:10] }}</td>
+                        <td>{{ auth.expected_decision_by[:10] }}</td>
+                        <td><a href="/auth/{{ auth.auth_id }}" class="action-link">View</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if not auths %}
+            <div style="text-align:center;padding:60px;color:var(--color-text-tertiary);">
+                <p style="font-size:18px;margin-bottom:8px;">No prior auth requests yet</p>
+                <a href="/new" class="btn btn-primary">Create First Request</a>
+            </div>
+            {% endif %}
+        </main>
+    </div>
+</body>
+</html>

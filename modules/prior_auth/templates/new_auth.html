@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Prior Authorization</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div>
+                    <h1>Prior Auth</h1>
+                    <p>Authorization Management</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">📊 Dashboard</a>
+                <a href="/new" class="active">➕ New Request</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>New Prior Authorization Request</h2>
+            </div>
+
+            <div class="detail-section">
+                <form id="authForm">
+                    <h3 style="margin-bottom:16px;">Patient Information</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="patient_id">Patient ID</label>
+                            <input type="text" id="patient_id" name="patient_id" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="patient_name">Patient Name</label>
+                            <input type="text" id="patient_name" name="patient_name" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="payer_name">Insurance Payer</label>
+                            <select id="payer_name" name="payer_name" required onchange="checkPayerRules()">
+                                <option value="">Select payer...</option>
+                                {% for payer in payers %}
+                                <option value="{{ payer.name }}">{{ payer.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="procedure">Procedure / Service</label>
+                            <input type="text" id="procedure" name="procedure" required placeholder="e.g., MRI, Home Health, Physical Therapy" oninput="checkPayerRules()">
+                        </div>
+                    </div>
+
+                    <div id="payerCheckResult" style="margin-bottom:16px;"></div>
+
+                    <h3 style="margin:24px 0 16px;">Clinical Information</h3>
+                    <div class="form-group">
+                        <label for="diagnosis_codes">Diagnosis Codes (comma-separated)</label>
+                        <input type="text" id="diagnosis_codes" name="diagnosis_codes" required placeholder="e.g., I50.9, E11.9, M54.5">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="provider_name">Provider Name</label>
+                            <input type="text" id="provider_name" name="provider_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="provider_npi">Provider NPI</label>
+                            <input type="text" id="provider_npi" name="provider_npi" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="clinical_notes">Clinical Notes</label>
+                        <textarea id="clinical_notes" name="clinical_notes" rows="4" placeholder="Describe the clinical context, previous treatments, and why this service is medically necessary..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="urgency">Urgency</label>
+                            <select id="urgency" name="urgency">
+                                <option value="standard">Standard</option>
+                                <option value="expedited">Expedited</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="requested_start_date">Requested Start Date</label>
+                            <input type="date" id="requested_start_date" name="requested_start_date">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="margin-top:16px;">Submit Prior Auth Request</button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function checkPayerRules() {
+            const payer = document.getElementById('payer_name').value;
+            const procedure = document.getElementById('procedure').value;
+            const resultDiv = document.getElementById('payerCheckResult');
+
+            if (!payer || !procedure) {
+                resultDiv.innerHTML = '';
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/payers/${encodeURIComponent(payer)}/check?procedure=${encodeURIComponent(procedure)}`);
+                const data = await res.json();
+
+                if (data.needs_prior_auth) {
+                    resultDiv.innerHTML = `<div style="background:#FFFBEB;border:1px solid #FDE68A;padding:12px;border-radius:8px;">⚠️ <strong>${data.payer}</strong> requires prior authorization for <strong>${data.procedure}</strong>. Turnaround: ~${data.rules?.turnaround_hours || '?'} hours.</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div style="background:#F0FFF4;border:1px solid #C6F6D5;padding:12px;border-radius:8px;">✅ <strong>${data.payer}</strong> does not require prior authorization for <strong>${data.procedure}</strong>.</div>`;
+                }
+            } catch (e) {}
+        }
+
+        document.getElementById('authForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                patient_id: form.patient_id.value,
+                patient_name: form.patient_name.value,
+                payer_name: form.payer_name.value,
+                procedure: form.procedure.value,
+                diagnosis_codes: form.diagnosis_codes.value.split(',').map(s => s.trim()),
+                provider_name: form.provider_name.value,
+                provider_npi: form.provider_npi.value,
+                clinical_notes: form.clinical_notes.value,
+                urgency: form.urgency.value,
+                requested_start_date: form.requested_start_date.value,
+            };
+
+            try {
+                const res = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) {
+                    const result = await res.json();
+                    window.location.href = `/auth/${result.auth_id}`;
+                }
+            } catch (err) {
+                alert('Error submitting request');
+            }
+        });
+    </script>
+</body>
+</html>

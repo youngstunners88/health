@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth {{ auth.auth_id }} - Prior Auth</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div><h1>Prior Auth</h1><p>Authorization Management</p></div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">📊 Dashboard</a>
+                <a href="/new">➕ New Request</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <a href="/" class="action-link" style="font-size:13px;">← Back to Dashboard</a>
+                    <h2 style="margin-top:4px;">{{ auth.auth_id }}</h2>
+                </div>
+                <span class="badge badge-{{ auth.status }}">{{ auth.status.replace('_', ' ') }}</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;">
+                <div>
+                    <div class="detail-section">
+                        <h3>Request Details</h3>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:14px;">
+                            <div><strong>Patient:</strong> {{ auth.patient_name }} ({{ auth.patient_id }})</div>
+                            <div><strong>Payer:</strong> {{ auth.payer_name }}</div>
+                            <div><strong>Procedure:</strong> {{ auth.procedure }}</div>
+                            <div><strong>Diagnoses:</strong> {{ auth.diagnosis_codes | join(', ') }}</div>
+                            <div><strong>Provider:</strong> {{ auth.provider_name }} (NPI: {{ auth.provider_npi }})</div>
+                            <div><strong>Urgency:</strong> {{ auth.urgency }}</div>
+                            <div><strong>Submitted:</strong> {{ auth.submitted_at[:16].replace('T', ' ') }}</div>
+                            <div><strong>Decision By:</strong> {{ auth.expected_decision_by[:16].replace('T', ' ') }}</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Clinical Justification</h3>
+                        {% if auth.clinical_justification %}
+                        <div class="justification-block">
+                            <h4>Medical Necessity</h4>
+                            <p>{{ auth.clinical_justification.medical_necessity }}</p>
+                        </div>
+                        <div class="justification-block">
+                            <h4>Conservative Treatments</h4>
+                            <ul>{% for t in auth.clinical_justification.conservative_treatment_history %}<li>{{ t }}</li>{% endfor %}</ul>
+                        </div>
+                        <div class="justification-block">
+                            <h4>Evidence-Based Guidelines</h4>
+                            <ul>{% for g in auth.clinical_justification.evidence_based_guidelines %}<li>{{ g }}</li>{% endfor %}</ul>
+                        </div>
+                        {% if auth.clinical_notes %}
+                        <div class="justification-block">
+                            <h4>Clinical Notes</h4>
+                            <p>{{ auth.clinical_notes }}</p>
+                        </div>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+
+                    {% if auth.decision %}
+                    <div class="detail-section">
+                        <h3>Decision</h3>
+                        <div style="font-size:14px;">
+                            <p><strong>Decision:</strong> <span class="badge badge-{{ auth.decision }}">{{ auth.decision }}</span></p>
+                            {% if auth.auth_number %}<p><strong>Auth Number:</strong> {{ auth.auth_number }}</p>{% endif %}
+                            {% if auth.decision_reason %}<p><strong>Reason:</strong> {{ auth.decision_reason }}</p>{% endif %}
+                            {% if auth.denial_reason %}<p><strong>Denial Reason:</strong> {{ auth.denial_reason }}</p>{% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if auth.status == 'denied' and auth.get('auto_appeal_generated') %}
+                    <div class="detail-section">
+                        <h3>📝 Auto-Generated Appeal Letter</h3>
+                        <div class="appeal-letter">{{ auth.auto_appeal_generated.appeal_letter }}</div>
+                        <div style="margin-top:16px;display:flex;gap:8px;">
+                            <button onclick="submitAppeal()" class="btn btn-primary">Submit Appeal</button>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if auth.appeals %}
+                    <div class="detail-section">
+                        <h3>Appeals History</h3>
+                        {% for appeal in auth.appeals %}
+                        <div style="padding:12px;background:#F7F8FA;border-radius:6px;margin-bottom:8px;">
+                            <strong>{{ appeal.appeal_number }}</strong> — <span class="badge badge-{{ appeal.status }}">{{ appeal.status }}</span>
+                            <p style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">Submitted: {{ appeal.submitted_at[:16].replace('T', ' ') }}</p>
+                            {% if appeal.notes %}<p style="font-size:13px;margin-top:4px;">Notes: {{ appeal.notes }}</p>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <div class="detail-section">
+                        <h3>Documents</h3>
+                        {% for doc in auth.documents %}
+                        <div style="padding:8px 0;border-bottom:1px solid var(--color-border);font-size:13px;">
+                            <strong>{{ doc.document_type }}</strong>
+                            <p style="color:var(--color-text-secondary);">{{ doc.description }}</p>
+                            <span class="badge badge-{{ doc.status }}">{{ doc.status }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if auth.status == 'submitted' or auth.status == 'pending_review' %}
+                    <div class="detail-section">
+                        <h3>Process Decision</h3>
+                        <form id="decisionForm">
+                            <div class="form-group">
+                                <label for="decision">Decision</label>
+                                <select id="decision" name="decision" required>
+                                    <option value="approved">Approved</option>
+                                    <option value="denied">Denied</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="auth_number">Auth Number (if approved)</label>
+                                <input type="text" id="auth_number" name="auth_number">
+                            </div>
+                            <div class="form-group">
+                                <label for="denial_reason">Denial Reason (if denied)</label>
+                                <textarea id="denial_reason" name="denial_reason" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm" style="width:100%;">Process Decision</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.getElementById('decisionForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                auth_id: '{{ auth.auth_id }}',
+                decision: form.decision.value,
+                auth_number: form.auth_number.value,
+                denial_reason: form.denial_reason.value,
+            };
+            try {
+                const res = await fetch('/api/auth/decision', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (res.ok) location.reload();
+            } catch (e) { alert('Error processing decision'); }
+        });
+
+        async function submitAppeal() {
+            try {
+                const res = await fetch('/api/auth/appeal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ auth_id: '{{ auth.auth_id }}' })
+                });
+                if (res.ok) location.reload();
+            } catch (e) { alert('Error submitting appeal'); }
+        }
+    </script>
+</body>
+</html>

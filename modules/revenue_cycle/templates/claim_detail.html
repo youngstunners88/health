@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim {{ claim.claim_id }} - Revenue Cycle</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px; }
+        .detail-grid div { padding: 4px 0; }
+        .procedure-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .procedure-table th { font-size: 11px; padding: 6px 8px; }
+        .procedure-table td { font-size: 13px; padding: 8px; }
+        .era-block { background: #F0FFF4; border: 1px solid #C6F6D5; border-radius: var(--radius-sm); padding: 16px; }
+        .era-block h4 { color: var(--color-success); margin-bottom: 12px; }
+        .appeal-block { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--radius-sm); padding: 16px; }
+        .appeal-block h4 { color: #975A16; margin-bottom: 12px; }
+        .action-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+        @media (max-width: 768px) {
+            .detail-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div>
+                    <h1>Revenue Cycle</h1>
+                    <p>Claims & Billing</p>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/">📊 Dashboard</a>
+                <a href="/new">➕ New Claim</a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <a href="/" class="action-link" style="font-size:13px;">← Back to Dashboard</a>
+                    <h2 style="margin-top:4px;">{{ claim.claim_id }}</h2>
+                </div>
+                <span class="badge badge-{{ claim.status }}">{{ claim.status.replace('_', ' ') }}</span>
+            </div>
+
+            <div class="action-bar" style="margin-bottom:24px;">
+                {% if claim.status == 'denied' %}
+                <button onclick="submitAppeal()" class="btn btn-primary">📝 Submit Appeal</button>
+                {% endif %}
+                {% if claim.status == 'submitted' or claim.status == 'pending' %}
+                <button onclick="processERA()" class="btn btn-primary">🔄 Process ERA</button>
+                {% endif %}
+            </div>
+
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;">
+                <div>
+                    <div class="detail-section">
+                        <h3>Patient Information</h3>
+                        <div class="detail-grid">
+                            <div><strong>Name:</strong> {{ claim.patient_name }}</div>
+                            <div><strong>Patient ID:</strong> {{ claim.patient_id }}</div>
+                            <div><strong>DOB:</strong> {{ claim.patient_dob }}</div>
+                            <div><strong>Member ID:</strong> {{ claim.member_id }}</div>
+                            <div><strong>Group #:</strong> {{ claim.group_number }}</div>
+                            <div><strong>Account #:</strong> {{ claim.account_number }}</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Payer Information</h3>
+                        <div class="detail-grid">
+                            <div><strong>Payer:</strong> {{ claim.payer_name }}</div>
+                            <div><strong>Payer ID:</strong> {{ claim.payer_id }}</div>
+                            <div><strong>Plan Type:</strong> {{ claim.plan_type }}</div>
+                            <div><strong>Policy #:</strong> {{ claim.policy_number }}</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Diagnoses (ICD-10)</h3>
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                            {% for dx in claim.diagnoses %}
+                            <span class="badge badge-submitted">{{ dx.code }}{% if dx.description %} — {{ dx.description }}{% endif %}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="detail-section">
+                        <h3>Procedures (CPT)</h3>
+                        <table class="procedure-table">
+                            <thead>
+                                <tr>
+                                    <th>CPT Code</th>
+                                    <th>Description</th>
+                                    <th>Modifiers</th>
+                                    <th>Units</th>
+                                    <th>Charge</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for proc in claim.procedures %}
+                                <tr>
+                                    <td><strong>{{ proc.cpt_code }}</strong></td>
+                                    <td>{{ proc.description }}</td>
+                                    <td>{{ proc.modifiers | join(', ') if proc.modifiers else '—' }}</td>
+                                    <td>{{ proc.units }}</td>
+                                    <td>${{ "{:,.2f}".format(proc.charge) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <div style="text-align:right;margin-top:12px;font-size:16px;font-weight:700;">
+                            Total: ${{ "{:,.2f}".format(claim.total_charge) }}
+                        </div>
+                    </div>
+
+                    {% if claim.era %}
+                    <div class="detail-section">
+                        <div class="era-block">
+                            <h4>ERA / Remittance Advice</h4>
+                            <div class="detail-grid">
+                                <div><strong>ERA Date:</strong> {{ claim.era.era_date[:10] }}</div>
+                                <div><strong>Check/Ref #:</strong> {{ claim.era.check_number }}</div>
+                                <div><strong>Billed Amount:</strong> ${{ "{:,.2f}".format(claim.era.billed_amount) }}</div>
+                                <div><strong>Allowed Amount:</strong> ${{ "{:,.2f}".format(claim.era.allowed_amount) }}</div>
+                                <div><strong>Paid Amount:</strong> <span style="color:var(--color-success);font-weight:700;">${{ "{:,.2f}".format(claim.era.paid_amount) }}</span></div>
+                                <div><strong>Patient Responsibility:</strong> ${{ "{:,.2f}".format(claim.era.patient_responsibility) }}</div>
+                                <div><strong>Adjustment:</strong> ${{ "{:,.2f}".format(claim.era.adjustment) }}</div>
+                            </div>
+                            {% if claim.era.remark_codes %}
+                            <div style="margin-top:12px;">
+                                <strong>Remark Codes:</strong>
+                                {% for code in claim.era.remark_codes %}
+                                <span class="badge badge-submitted" style="margin-left:4px;">{{ code }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if claim.status == 'denied' %}
+                    <div class="detail-section">
+                        <div class="appeal-block">
+                            <h4>Claim Denied</h4>
+                            {% if claim.denial_reason %}
+                            <p style="font-size:14px;margin-bottom:12px;"><strong>Reason:</strong> {{ claim.denial_reason }}</p>
+                            {% endif %}
+                            {% if claim.claim_remarks %}
+                            <p style="font-size:14px;"><strong>Remarks:</strong> {{ claim.claim_remarks }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if claim.get('auto_appeal') %}
+                    <div class="detail-section">
+                        <h3>📝 Auto-Generated Appeal</h3>
+                        <div class="appeal-letter">{{ claim.auto_appeal.appeal_letter }}</div>
+                        <div style="margin-top:16px;display:flex;gap:8px;">
+                            <button onclick="submitAppeal()" class="btn btn-primary">Submit Appeal</button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    {% if claim.appeals %}
+                    <div class="detail-section">
+                        <h3>Appeals History</h3>
+                        {% for appeal in claim.appeals %}
+                        <div style="padding:12px;background:#F7F8FA;border-radius:6px;margin-bottom:8px;">
+                            <strong>{{ appeal.appeal_number }}</strong> — <span class="badge badge-{{ appeal.status }}">{{ appeal.status }}</span>
+                            <p style="font-size:13px;color:var(--color-text-secondary);margin-top:4px;">Submitted: {{ appeal.submitted_at[:16].replace('T', ' ') }}</p>
+                            {% if appeal.notes %}<p style="font-size:13px;margin-top:4px;">Notes: {{ appeal.notes }}</p>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <div class="detail-section">
+                        <h3>Claim Summary</h3>
+                        <div style="font-size:14px;">
+                            <p style="margin-bottom:8px;"><strong>Submitted:</strong> {{ claim.submitted_date[:16].replace('T', ' ') }}</p>
+                            {% if claim.prior_auth_id %}
+                            <p style="margin-bottom:8px;"><strong>Prior Auth ID:</strong> {{ claim.prior_auth_id }}</p>
+                            {% endif %}
+                            {% if claim.service_date %}
+                            <p style="margin-bottom:8px;"><strong>Service Date:</strong> {{ claim.service_date[:10] }}</p>
+                            {% endif %}
+                            {% if claim.place_of_service %}
+                            <p style="margin-bottom:8px;"><strong>Place of Service:</strong> {{ claim.place_of_service }}</p>
+                            {% endif %}
+                            {% if claim.provider_npi %}
+                            <p style="margin-bottom:8px;"><strong>Provider NPI:</strong> {{ claim.provider_npi }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if claim.timeline %}
+                    <div class="detail-section">
+                        <h3>Timeline</h3>
+                        {% for event in claim.timeline %}
+                        <div style="padding:8px 0;border-bottom:1px solid var(--color-border);font-size:13px;">
+                            <strong>{{ event.event }}</strong>
+                            <p style="color:var(--color-text-secondary);">{{ event.timestamp[:16].replace('T', ' ') }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function submitAppeal() {
+            if (!confirm('Submit appeal for this claim?')) return;
+            try {
+                const res = await fetch('/api/claim/{{ claim.claim_id }}/appeal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (res.ok) location.reload();
+                else alert('Error submitting appeal');
+            } catch (e) { alert('Error submitting appeal'); }
+        }
+
+        async function processERA() {
+            try {
+                const res = await fetch('/api/claim/{{ claim.claim_id }}/era', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (res.ok) location.reload();
+                else alert('Error processing ERA');
+            } catch (e) { alert('Error processing ERA'); }
+        }
+    </script>
+</body>
+</html>
